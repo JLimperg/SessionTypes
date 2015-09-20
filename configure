@@ -1,0 +1,3 @@
+#!/bin/bash
+
+coq_makefile -R tlc/src/ TLC tlc/src/ *.v > Makefile
