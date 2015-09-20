@@ -11,6 +11,8 @@ Notation env_mem := S.In.
 Notation env_memb := SF.In_dec.
 Notation env_eq := S.Equal.
 Notation env_union := S.union.
+Notation env_singleton x := (env_add x env_empty).
+Notation env_fold := S.fold.
 
 Definition env_add_all (xs : list Var) (ys : Env) : Env :=
   fold_left (fun x y => env_add y x) xs ys.
@@ -52,3 +54,63 @@ Lemma env_eq_spec :
   forall e e',
   env_eq e e' <-> (forall x, env_mem x e <-> env_mem x e').
 Proof with auto. intros; split; intros H; auto. Qed.
+
+Definition env_eq_refl :
+  forall e,
+  env_eq e e
+  := SF.equal_refl.
+
+Definition env_eq_sym :
+  forall e e',
+  env_eq e e' ->
+  env_eq e' e
+  := SF.equal_sym.
+
+Definition env_eq_trans :
+  forall e1 e2 e3,
+  env_eq e1 e2 ->
+  env_eq e2 e3 ->
+  env_eq e1 e3
+  := SF.equal_trans.
+
+Lemma env_add_union_singleton :
+  forall e X,
+  env_eq (env_union e (env_singleton X)) (env_add X e).
+Proof.
+  intros e X. symmetry. rewrite SF.union_sym. apply SF.add_union_singleton.
+Qed.
+
+Lemma env_add_union1 :
+  forall X e e',
+  env_eq (env_add X (env_union e e')) (env_union (env_add X e) e').
+Proof. intros. symmetry. apply SF.union_add. Qed.
+
+Lemma env_add_union2 :
+  forall X e e',
+  env_eq (env_add X (env_union e e')) (env_union e (env_add X e')).
+Proof.
+  intros. rewrite SF.union_sym. rewrite env_add_union1. rewrite SF.union_sym.
+  apply env_eq_refl.
+Qed.
+
+Lemma env_union_add :
+  forall X X' e e',
+  env_eq (env_union (env_add X e) (env_add X' e')) (env_union e (env_add X (env_add X' e'))).
+Proof.
+  intros. rewrite <- env_add_union1. rewrite env_add_union2. reflexivity.
+Qed.
+
+Lemma env_add_union_singleton2 :
+  forall X e,
+  env_eq (env_add X e) (env_union e (env_singleton X)).
+Proof. auto with set. Qed.
+
+Lemma env_union_neutral :
+  forall e,
+  env_eq (env_union e env_empty) e.
+Proof. auto with set. Qed.
+
+Lemma env_union_assoc :
+  forall e e' e'',
+  env_eq (env_union (env_union e e') e'') (env_union e (env_union e' e'')).
+Proof. auto with set. Qed.
