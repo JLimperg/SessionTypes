@@ -1,4 +1,4 @@
-Require Import Env Morphisms Program.Basics SessionTypesC Msg Var.
+Require Import Env Morphisms Program.Basics SessionTypesC Msg Shape Var.
 
 Create HintDb wf discriminated.
 
@@ -28,8 +28,8 @@ Inductive ok : Env -> Sty -> Prop :=
     ok xs (ichoice S1 S2)
 | ok_mu :
     forall xs ys S,
-    (forall Y, S <> var Y) ->
-    (forall zs S', S <> mu zs S') ->
+    (shape S <> varS) ->
+    (shape S <> muS) ->
     ok (env_union xs ys) S ->
     ok xs (mu ys S)
 | ok_var :
@@ -65,20 +65,20 @@ Proof with (eauto with wf).
 
     inversion_clear HST. split.
       intro H'. inversion_clear H'. constructor.
-        intros Y Contra. rewrite Contra in H0. inversion H0. symmetry in H5.
-        apply H1 in H5...
+        unfold not in *. apply eq_syn_shape in H0. intro Hsh.
+        rewrite <- H0 in Hsh. apply H1. rewrite Hsh. trivial.
 
-        intros zs S0 Contra. rewrite Contra in H0. inversion H0.
-        symmetry in H6. apply H2 in H6...
+        unfold not in *. apply eq_syn_shape in H0. intro Hsh.
+        rewrite <- H0 in Hsh. apply H2. rewrite Hsh. trivial.
 
         eapply IHS; eauto with wf. rewrite Hxsys. rewrite <- H. reflexivity.
 
       intro H'. inversion_clear H'. constructor.
-        intros Y Contra. rewrite Contra in H0. inversion H0. symmetry in H6.
-        apply H1 in H6...
+        unfold not in *. apply eq_syn_shape in H0. intro Hsh.
+        rewrite H0 in Hsh. apply H1. rewrite Hsh. trivial.
 
-        intros zs S0 Contra. rewrite Contra in H0. inversion H0.
-        symmetry in H7. apply H2 in H7...
+        unfold not in *. apply eq_syn_shape in H0. intro Hsh.
+        rewrite H0 in Hsh. apply H2. rewrite Hsh. trivial.
 
         eapply IHS; eauto with wf. rewrite Hxsys. rewrite <- H. reflexivity.
 

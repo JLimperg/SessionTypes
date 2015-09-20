@@ -72,10 +72,8 @@ Inductive eq_syn : Sty -> Sty -> Prop :=
 .
 Hint Constructors eq_syn : styc.
 
-Create HintDb tmp discriminated.
-
-Hint Constructors eq_syn : tmp.
-Hint Resolve env_eq_refl env_eq_sym env_eq_trans : tmp.
+Local Hint Constructors eq_syn : tmp.
+Local Hint Resolve env_eq_refl env_eq_sym env_eq_trans : tmp.
 
 Lemma eq_syn_refl : reflexive Sty eq_syn.
 Proof. unfold reflexive. intros S. induction S; auto with tmp. Qed.
@@ -94,5 +92,16 @@ Add Relation Sty eq_syn
   symmetry proved by eq_syn_sym
   transitivity proved by eq_syn_trans
   as eq_syn'.
+
+Lemma eq_syn_shape :
+  forall S S',
+  eq_syn S S' ->
+  shape S = shape S'.
+Proof. intros S S' H. induction H; auto with styc. Qed.
+
+Hint Resolve eq_syn_shape : styc.
+
+Instance shape_m : Proper (eq_syn ==> eq) shape.
+Proof. unfold Proper. unfold respectful. apply eq_syn_shape. Qed.
 
 End StyC.
