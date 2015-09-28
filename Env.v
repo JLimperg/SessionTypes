@@ -17,7 +17,7 @@ Notation env_fold := S.fold.
 Definition env_add_all (xs : list Var) (ys : Env) : Env :=
   fold_left (fun x y => env_add y x) xs ys.
 
-Definition env_add_exchange :
+Definition env_add_assoc :
   forall XS X Y,
   env_eq (env_add X (env_add Y XS)) (env_add Y (env_add X XS))
   := SF.add_add.
