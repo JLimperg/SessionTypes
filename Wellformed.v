@@ -1,4 +1,5 @@
-Require Import Env Morphisms SessionTypes Program.Basics Msg Var.
+Require Import Env Morphisms SessionTypes Program.Basics Msg TLC.LibTactics
+  Var.
 
 Create HintDb wf discriminated.
 
@@ -48,132 +49,79 @@ Hint Constructors checked : wf.
 Definition wellformed S := ok env_empty S.
 Hint Unfold wellformed : wf.
 
-Lemma wf_m :
+Lemma ok_checked_subset :
   forall S e e',
-  env_eq e e' ->
+  env_subset e e' ->
   (checked e S -> checked e' S) /\
   (ok e S -> ok e' S).
-Proof with (eauto with wf).
-  induction S; intros e e' eqee'; split; intros He...
+Proof.
+  induction S; introv Hsub; split; introv H;
+    try (first [edestruct IHS | edestruct IHS1; edestruct IHS2]); eauto;
+    try solve
+      [ constructor; constructor; inverts H as H; inverts H; auto
+      | constructor; inverts H; auto
+      ].
 
-    inversion_clear He. inversion_clear H.
-    specialize IHS with (e := e) (e' := e'). destruct IHS as [Hch Hok]...
+    constructor. constructor.
+    destruct IHS with (e := env_add v e) (e' := env_add v e').
+    apply env_add_m_subset. auto. inverts H. inverts H4. auto.
 
-    inversion_clear He. inversion_clear H.
-      rewrite eqee' in H0...
-      specialize IHS with (e := e) (e' := e'). destruct IHS as [Hch Hok]...
+    constructor. inverts H. eapply IHS. apply env_add_m_subset; eauto. auto.
 
-    inversion_clear He. inversion_clear H.
-    specialize IHS with (e := e) (e' := e'). destruct IHS as [Hch Hok]...
+    constructor. inverts H.
+      eapply env_mem_spec_subset; eauto.
+      inverts H0.
 
-    inversion_clear He. inversion_clear H.
-      rewrite eqee' in H0...
-      specialize IHS with (e := e) (e' := e'). destruct IHS as [Hch Hok]...
-
-    inversion_clear He. inversion_clear H.
-    specialize IHS1 with (e := e) (e' := e'). specialize IHS2 with (e := e) (e' := e').
-    destruct IHS1... destruct IHS2...
-
-    inversion_clear He.
-    specialize IHS1 with (e := e) (e' := e'). specialize IHS2 with (e := e) (e' := e').
-    destruct IHS1... destruct IHS2...
-
-    inversion_clear He. inversion_clear H.
-    specialize IHS1 with (e := e) (e' := e'). specialize IHS2 with (e := e) (e' := e').
-    destruct IHS1... destruct IHS2...
-
-    inversion_clear He.
-    specialize IHS1 with (e := e) (e' := e'). specialize IHS2 with (e := e) (e' := e').
-    destruct IHS1... destruct IHS2...
-
-    inversion_clear He. inversion_clear H. constructor.
-    assert (env_eq (env_add v e) (env_add v e')). eapply env_add_eq in eqee'...
-    constructor. eapply IHS in H0...
-
-    inversion_clear He. eapply env_add_eq in eqee'. constructor. eapply IHS in H...
-
-    inversion_clear He.
-      rewrite eqee' in H...
-      inversion H.
-
-    inversion He.
+    inverts H.
 Qed.
 
-Lemma ok_m' :
-  forall e e' S,
-  env_eq e e' ->
-  ok e S ->
-  ok e' S.
-Proof with auto.
-  intros. remember wf_m as Hwf. clear HeqHwf.
-  specialize Hwf with (S := S) (e := e) (e' := e'). apply Hwf in H. destruct H...
+Global Instance checked_m_subset : Proper (env_subset ==> eq ==> impl) checked.
+Proof.
+  unfold Proper. unfold respectful. unfold impl.
+  introv Hsub Heq Hch. subst. remember ok_checked_subset as lemma.
+  edestruct lemma; eauto.
 Qed.
 
-Lemma checked_m' :
-  forall e e' S,
-  env_eq e e' ->
-  checked e S ->
-  checked e' S.
-Proof with auto.
-  intros. remember wf_m as Hwf. clear HeqHwf.
-  specialize Hwf with (S := S) (e := e) (e' := e'). apply Hwf in H. destruct H...
+Global Instance ok_m_subset : Proper (env_subset ==> eq ==> impl) ok.
+Proof.
+  unfold Proper. unfold respectful. unfold impl.
+  introv Hsub Heq Hch. subst. remember ok_checked_subset as lemma.
+  edestruct lemma; eauto.
 Qed.
 
-Instance ok_m : Proper (env_eq ==> eq ==> impl) ok.
-Proof with eauto.
-  unfold Proper. unfold respectful. unfold impl. intros x y eqxy X Y eqXY H.
-  eapply ok_m'... rewrite <- eqXY...
+Global Instance checked_m_env_eq : Proper (env_eq ==> eq ==> impl) checked.
+Proof.
+  unfold Proper. unfold respectful. unfold impl. introv Hsub Heq Hch. subst.
+  apply env_subset_equal in Hsub. rewrite <- Hsub. auto.
 Qed.
 
-Instance checked_m : Proper (env_eq ==> eq ==> impl) checked.
-Proof with eauto.
-  unfold Proper. unfold respectful. unfold impl. intros x y eqxy X Y eqXY H.
-  eapply checked_m'... rewrite <- eqXY...
+Global Instance ok_m_env_eq : Proper (env_eq ==> eq ==> impl) ok.
+Proof.
+  unfold Proper. unfold respectful. unfold impl. introv Hsub Heq Hch. subst.
+  apply env_subset_equal in Hsub. rewrite <- Hsub. auto.
 Qed.
 
-Lemma surplus_variables_in_env :
-  forall S XS X,
-  (checked XS S ->
-  checked (env_add X XS) S) /\
-  (ok XS S ->
-  ok (env_add X XS) S).
-Proof with (auto with env wf).
-  let aut := (auto with env wf)
-  in
-  induction S; split; aut; intros H; inversion_clear H;
-    (try (  (specialize IHS with (XS := XS) (X := X); apply proj1 in IHS;
-            solve [inversion_clear H0; aut | aut])
-         || (specialize IHS1 with (XS := XS) (X := X);
-            specialize IHS2 with (XS := XS) (X := X);
-            apply proj1 in IHS1; apply proj1 in IHS2;
-            solve [inversion_clear H0; aut | aut])
-         )).
-
-    constructor. constructor. inversion_clear H0.
-    specialize IHS with (XS := env_add v XS) (X := X).
-    apply proj2 in IHS. rewrite env_add_assoc...
-
-    specialize IHS with (XS := env_add v XS) (X := X).
-    constructor. rewrite env_add_assoc. apply IHS...
-
-    constructor. apply env_add_mem...
-
-    inversion H0.
-Qed.
-
-Lemma surplus_variables_in_env_ok :
+Lemma ok_add :
   forall XS X S,
   ok XS S ->
   ok (env_add X XS) S.
-Proof. intros XS X S. apply surplus_variables_in_env. Qed.
-Hint Resolve surplus_variables_in_env_ok : wf.
+Proof.
+  introv H.
+  asserts_rewrite <- (env_subset XS (env_add X XS)). apply env_subset_add.
+  auto.
+Qed.
+Hint Resolve ok_add : wf.
 
-Lemma surplus_variables_in_env_checked :
+Lemma checked_add :
   forall XS X S,
   checked XS S ->
   checked (env_add X XS) S.
-Proof. intros XS X S. apply surplus_variables_in_env. Qed.
-Hint Resolve surplus_variables_in_env_checked : wf.
+Proof.
+  introv H.
+  asserts_rewrite <- (env_subset XS (env_add X XS)). apply env_subset_add.
+  auto.
+Qed.
+Hint Resolve checked_add : wf.
 
 Lemma subst_preserves_wellformedness :
   forall S T XS X,
@@ -208,7 +156,7 @@ Proof with (auto with env wf).
       apply beq_var_true_iff in HXv. subst. rewrite env_add_twice in H...
 
       apply beq_var_false_iff in HXv. constructor. apply IHS.
-        apply surplus_variables_in_env_ok...
+        apply ok_add...
         rewrite env_add_assoc...
 Qed.
 

@@ -27,8 +27,6 @@ Lemma env_mem_spec_subset :
   env_mem x e'.
 Proof. intros. eapply SF.in_subset; eauto. Qed.
 
-Definition env_add_all (xs : list Var) (ys : Env) : Env :=
-  fold_left (fun x y => env_add y x) xs ys.
 Definition env_subset_equal :
   forall XS YS,
   env_eq XS YS ->

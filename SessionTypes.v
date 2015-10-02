@@ -36,4 +36,8 @@ Definition shape (S : Sty) : Shape :=
   end
 .
 
+Lemma shape_dec :
+  forall S sh, {shape S = sh} + {shape S <> sh}.
+Proof. decide equality. Qed.
+
 End Sty.

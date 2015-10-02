@@ -1,4 +1,5 @@
-Require Import Env Morphisms Program.Basics SessionTypesC Msg Shape Var.
+Require Import Env List1 Morphisms Msg Program.Basics SessionTypesC
+  Shape TLC.LibTactics Var.
 
 Create HintDb wf discriminated.
 
@@ -28,9 +29,9 @@ Inductive ok : Env -> Sty -> Prop :=
     ok xs (ichoice S1 S2)
 | ok_mu :
     forall xs ys S,
-    (shape S <> varS) ->
-    (shape S <> muS) ->
-    ok (env_union xs ys) S ->
+    shape S <> varS ->
+    shape S <> muS ->
+    ok (env_union_vars xs ys) S ->
     ok xs (mu ys S)
 | ok_var :
     forall X xs,
@@ -41,51 +42,33 @@ Hint Constructors ok : wf.
 
 Definition wellformed (S : Sty) := ok env_empty S.
 
-(* TODO beautify *)
-Instance ok_m : Proper (env_eq ==> eq_syn ==> iff) ok.
+Global Instance ok_m_env_eq : Proper (env_eq ==> eq ==> iff) ok.
 Proof with (eauto with wf).
-  unfold Proper. unfold respectful. intros xs ys Hxsys S.
-  generalize dependent ys. generalize dependent xs.
-  induction S; intros xs ys Hxsys T HST.
-    inversion_clear HST. split; constructor.
+  unfold Proper. unfold respectful. intros xs ys Hxsys S. gen ys xs.
+  induction S; intros xs ys Hysxs T HST; rewrite <- HST; clear HST;
+    assert (env_eq xs ys) as Hxsys by (symmetry; auto);
+    split; try (intro H; inverts H); constructor; eauto; try solve
+    [eapply IHS; eauto | eapply IHS1; eauto | eapply IHS2; eauto].
 
-    inversion_clear HST. split;
-      intro H'; constructor; inversion_clear H'; eapply IHS; eauto with wf.
+    assert (env_eq (env_union_vars xs l) (env_union_vars ys l)).
+      rewrite Hxsys. reflexivity.
+    eapply IHS; eauto.
 
-    inversion_clear HST. split;
-      intro H'; constructor; inversion_clear H'; eapply IHS; eauto with wf.
+    assert (env_eq (env_union_vars ys l) (env_union_vars xs l)).
+      rewrite Hysxs. reflexivity.
+    eapply IHS; eauto.
 
-    inversion_clear HST. split.
-      intro H'; inversion_clear H'; constructor; [eapply IHS1 | eapply IHS2]; eauto with wf.
-      intro H'; inversion_clear H'; constructor; [eapply IHS1 | eapply IHS2]; eauto with wf.
+    rewrite Hxsys. auto.
 
-    inversion_clear HST. split.
-      intro H'; inversion_clear H'; constructor; [eapply IHS1 | eapply IHS2]; eauto with wf.
-      intro H'; inversion_clear H'; constructor; [eapply IHS1 | eapply IHS2]; eauto with wf.
+    rewrite Hysxs. auto.
+Qed.
 
-    inversion_clear HST. split.
-      intro H'. inversion_clear H'. constructor.
-        unfold not in *. apply eq_syn_shape in H0. intro Hsh.
-        rewrite <- H0 in Hsh. apply H1. rewrite Hsh. trivial.
-
-        unfold not in *. apply eq_syn_shape in H0. intro Hsh.
-        rewrite <- H0 in Hsh. apply H2. rewrite Hsh. trivial.
-
-        eapply IHS; eauto with wf. rewrite Hxsys. rewrite <- H. reflexivity.
-
-      intro H'. inversion_clear H'. constructor.
-        unfold not in *. apply eq_syn_shape in H0. intro Hsh.
-        rewrite H0 in Hsh. apply H1. rewrite Hsh. trivial.
-
-        unfold not in *. apply eq_syn_shape in H0. intro Hsh.
-        rewrite H0 in Hsh. apply H2. rewrite Hsh. trivial.
-
-        eapply IHS; eauto with wf. rewrite Hxsys. rewrite <- H. reflexivity.
-
-    inversion_clear HST. subst. split; intro H; inversion_clear H;
-      constructor.
-      rewrite <- Hxsys...
-      rewrite Hxsys...
+Global Instance ok_m_subset : Proper (env_subset ==> eq ==> impl) ok.
+Proof.
+  unfold Proper. unfold respectful. unfold impl. introv Hsub Heq H.
+  subst. rename y0 into S. gen x y.
+  induction S; introv H Hsub; constructor; inverts H; eauto.
+    eapply IHS; [eauto | rewrite Hsub; reflexivity].
 Qed.
 
 End WfC.
