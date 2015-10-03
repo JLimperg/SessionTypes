@@ -8,7 +8,7 @@ Inductive Var :=
 Hint Constructors Var : env.
 
 Lemma eq_var_dec : forall (X Y : Var), {X = Y} + {X <> Y}.
-Proof. decide equality. apply eq_nat_dec. Qed.
+Proof. decide equality. apply eq_nat_dec. Defined.
 Hint Immediate eq_var_dec : env.
 
 Definition beq_var x y := if eq_var_dec x y then true else false.
@@ -90,13 +90,13 @@ Module VarOrder <: OrderedType.
   Proof.
     unfold Irreflexive. unfold Reflexive. unfold complement. intros x H.
     destruct x. unfold lt in H. apply StrictOrder_Irreflexive in H. assumption.
-  Defined.
+  Qed.
 
   Instance lt_transitive : Transitive lt.
   Proof.
     unfold Transitive. intros x y z Hxy Hyz. destruct x; destruct y; destruct z.
     unfold lt in *. eapply transitivity; eassumption.
-  Defined.
+  Qed.
 
   Instance lt_strorder : StrictOrder lt := {
     StrictOrder_Irreflexive := lt_irreflexive ;

@@ -3,6 +3,9 @@ Import ListNotations.
 
 Create HintDb list1 discriminated.
 
+(*****************************************************************************)
+(* Facts about regular nonempty lists                                        *)
+
 Definition nonempty {A} (xs : list A) : Prop := (xs <> []).
 
 Lemma nonempty_inv :
@@ -17,6 +20,14 @@ Proof.
     unfold nonempty in *. rewrite Hnil in HxsNE. exfalso; auto.
 Qed.
 
+Lemma cons_not_nil :
+  forall A (x : A) xs,
+  nonempty (x :: xs).
+Proof. intros. unfold not; discriminate. Qed.
+
+(*****************************************************************************)
+(* The type of nonempty lists                                                *)
+
 Definition list1 (A : Type) := { xs : list A & nonempty xs }.
 
 Definition inj_list1_list (A : Type) (xs : list1 A) : list A :=
@@ -24,25 +35,34 @@ Definition inj_list1_list (A : Type) (xs : list1 A) : list A :=
 
 Coercion inj_list1_list : list1 >-> list.
 
+(*****************************************************************************)
+(* Construction                                                              *)
+
 Definition mkList1 {A} (xs : list A) (P : xs <> []) : list1 A :=
   existT nonempty xs P.
 Hint Unfold mkList1 : list1.
-
-Lemma cons_not_nil :
-  forall A (x : A) xs,
-  nonempty (x :: xs).
-Proof. intros. unfold not; discriminate. Qed.
 
 Definition list_to_list1 {A} (x : A) (xs : list A) : list1 A :=
   mkList1 (x :: xs) (cons_not_nil A x xs).
 Arguments list_to_list1 / _ _ _.
 Hint Unfold list_to_list1 : list1.
 
+Definition singleton1 {A} (x : A) := mkList1 [x] (cons_not_nil A x []).
+
+Definition cons1 {A} (x : A) (xs : list1 A) : list1 A :=
+  match xs with
+  | existT xs' _ => mkList1 (x :: xs') (cons_not_nil A x xs')
+  end
+.
+
+(*****************************************************************************)
+(* Equality                                                                  *)
+
 Definition eq_list1_compat :
   forall A (xs ys : list A),
   xs = ys ->
   forall xsnonempty ysnonempty, mkList1 xs xsnonempty = mkList1 ys ysnonempty.
-Proof. unfold mkList1. intros. apply subsetT_eq_compat. assumption. Qed.
+Proof. unfold mkList1. intros. apply subsetT_eq_compat. assumption. Defined.
 Hint Resolve eq_list1_compat : list1.
 
 Lemma eq_list1_dec {A} :
@@ -57,37 +77,6 @@ Proof.
 Qed.
 Hint Resolve eq_list1_dec : list1.
 
-Definition In1 := In.
-Hint Unfold In1 : list1.
-
-Lemma In1_dec {A} :
-  (forall (x y : A), {x = y} + {x <> y}) ->
-  forall (x : A) (xs : list1 A),
-  {In1 A x xs} + {~In1 A x xs}.
-Proof with auto.
-  introv Hdec. intros. destruct xs as [xs Hxs]. destruct (in_dec Hdec x xs)...
-Qed.
-Hint Resolve In1_dec : list1.
-
-Definition fold_left1 {A B} (f : B -> A -> B) (xs : list1 A) (b0 : B) :=
-  fold_left f (proj1_sig xs) b0.
-Hint Unfold fold_left1 : list1.
-Arguments fold_left1 / _ _ _ _ _.
-
-Definition head1 {A} (xs : list1 A) : A.
-destruct xs as [xs HxsNE]. apply nonempty_inv in HxsNE. destruct xs.
-  exfalso. destruct HxsNE as [x HxsNE]. destruct HxsNE. discriminate.
-  apply a.
-Qed.
-
-Definition singleton1 {A} (x : A) := mkList1 [x] (cons_not_nil A x []).
-
-Definition cons1 {A} (x : A) (xs : list1 A) : list1 A :=
-  match xs with
-  | existT xs' _ => mkList1 (x :: xs') (cons_not_nil A x xs')
-  end
-.
-
 Lemma cons1_inv :
   forall A (x y : A) xs ys Hys,
   cons1 x xs = mkList1 (y :: ys) Hys ->
@@ -98,35 +87,140 @@ Proof.
     auto.
     clear H Hys. remember Hxs as Hys. clear HeqHys. rewrite H0 in Hxs.
     exists Hxs. apply eq_list1_compat. auto.
-Qed.
+Defined.
 
-Definition lt_list1 {A} (xs ys : list1 A) := exists x, (cons1 x xs) = ys.
+(*****************************************************************************)
+(* Destruction                                                               *)
+
+Inductive sig3 {A B C : Type} (P : A -> B -> C -> Prop) : Type :=
+| exist3 : forall a b c, P a b c -> sig3 P.
+
+Definition destruct_list1 {A} (xs : list1 A) :
+  A + sig3 (fun x y zs => xs = cons1 x (list_to_list1 y zs)).
+Proof.
+  destruct xs as [xs HxsNE]. destruct xs as [_ | x xs'].
+    exfalso. auto.
+    destruct xs' as [_ | y zs].
+      left. exact x.
+      right. refine (exist3 _ x y zs _). simpl. apply eq_list1_compat. trivial.
+Defined.
+Hint Unfold destruct_list1 : list1.
+
+Definition destruct_list1_weak {A} (xs : list1 A) : A + (A * A * list A).
+  destruct (destruct_list1 xs) as [l | r]; [left | right; inverts r]; auto.
+Defined.
+Hint Unfold destruct_list1_weak : list1.
+
+Definition head1 {A} (xs : list1 A) : A :=
+  match destruct_list1_weak xs with
+  | inl x => x
+  | inr (x, _, _) => x
+  end
+.
+
+(*****************************************************************************)
+(* Membership                                                                *)
+
+Definition In1 := In.
+Hint Unfold In1 : list1.
+
+Lemma In1_dec {A} :
+  (forall (x y : A), {x = y} + {x <> y}) ->
+  forall (x : A) (xs : list1 A),
+  {In1 A x xs} + {~In1 A x xs}.
+Proof with auto.
+  introv Hdec. intros. destruct xs as [xs Hxs]. destruct (in_dec Hdec x xs)...
+Defined.
+Hint Resolve In1_dec : list1.
+
+(*****************************************************************************)
+(* Folding                                                                   *)
+
+Definition fold_left1 {A B} (f : B -> A -> B) (xs : list1 A) (b0 : B) :=
+  fold_left f (proj1_sig xs) b0.
+Hint Unfold fold_left1 : list1.
+Arguments fold_left1 / _ _ _ _ _.
+
+(*****************************************************************************)
+(* Well-founded induction                                                    *)
+
+Definition lt_list1 {A} (xs ys : list1 A) :=
+  exists x, x :: projT1 xs = projT1 ys.
+
+Definition lt_list1_sub {A B} (xs ys : {_ : list1 A & B}) :=
+  exists x, x :: projT1 (projT1 xs) = projT1 (projT1 ys).
+
+Lemma lt_list1_sub_wf' :
+  forall A B (xs : list A) (x : A) (ys : {_ : list1 A & B}),
+  (exists x, projT1 (projT1 ys) = (x :: xs)) ->
+  Acc lt_list1_sub ys.
+Proof.
+  intro. induction xs.
+    intros x ys H. constructor. intros xs Hsub. exfalso.
+    destruct ys as [ys bys]. destruct ys as [ys HysNE].
+    destruct xs as [xs bxs]. destruct xs as [xs HxsNE].
+    unfold lt_list1_sub in *. simpl in *. destruct H as [y Hys].
+    destruct Hsub as [a Hys']. subst. inverts Hys'. auto.
+
+    intros y ys H. destruct H as [x Hx]. constructor. intros y' Hsub.
+    apply IHxs. assumption. clear IHxs. inverts Hsub. rewrite Hx in H.
+    injection H. eauto.
+Defined.
+
+Lemma lt_list1_sub_wf :
+  forall A B,
+  well_founded (lt_list1_sub (A := A) (B := B)).
+Proof.
+  unfold well_founded. intros. destruct a as [a b]. destruct a as [a HaNE].
+  destruct a as [_ | x xs].
+    exfalso; auto.
+    eapply lt_list1_sub_wf'.
+      assumption.
+      simpl. eauto.
+Defined.
 
 Lemma lt_list1_wf' :
   forall A (xs : list A) (x : A) (ys : list1 A),
-  (exists x, ys = mkList1 (x :: xs) (cons_not_nil A x xs)) ->
+  (exists x, projT1 ys = (x :: xs)) ->
   Acc lt_list1 ys.
 Proof.
   intro. induction xs.
-    intros x ys H. inverts H. constructor. intros. destruct y. inverts H.
-    inverts H0. unfold not in *. exfalso. auto.
+    intros x ys H. constructor. intros xs Hsub. exfalso.
+    destruct ys as [ys HysNE].
+    destruct xs as [xs HxsNE].
+    unfold lt_list1_sub in *. simpl in *. destruct H as [y Hys].
+    destruct Hsub as [a Hys']. subst. inverts Hys'. auto.
 
-    intros x ys H. inverts H. constructor. intros y Hy. apply IHxs; auto.
-    exists a. inverts Hy. apply cons1_inv in H. destruct H. destruct H0.
-    rewrite H0. auto with list1.
-Qed.
+    intros y ys H. destruct H as [x Hx]. constructor. intros y' Hsub.
+    apply IHxs. assumption. clear IHxs. inverts Hsub. rewrite Hx in H.
+    injection H. eauto.
+Defined.
 
-(* TODO refactor the remember; clear; destruct; destruct dance into a
-   custom tactic. *)
-Lemma lt_list1_wf : forall A, well_founded (lt_list1 (A := A)).
+Lemma lt_list1_wf :
+  forall A,
+  well_founded (lt_list1 (A := A)).
 Proof.
   unfold well_founded. intros. destruct a as [a HaNE].
-  remember HaNE as HaNE'. clear HeqHaNE'. apply nonempty_inv in HaNE.
-  destruct HaNE as [x HaNE]. destruct HaNE as [xs Ha].
-  apply lt_list1_wf' with (xs := xs).
-    assumption.
-    exists x. apply eq_list1_compat. assumption.
-Qed.
+  destruct a as [_ | x xs].
+    exfalso; auto.
+    eapply lt_list1_wf'.
+      assumption.
+      simpl. eauto.
+Defined.
+
+Lemma Acc_eta :
+  forall A (R : A -> A -> Prop) x,
+  Acc R x ->
+  Acc (fun x y => R x y) x.
+Proof. introv Hacc. induction Hacc. constructor. auto. Defined.
+
+Lemma wf_eta :
+  forall A (R : A -> A -> Prop),
+  well_founded R ->
+  well_founded (fun x y => R x y).
+Proof.
+  introv Hwf. constructor. introv HRya. apply Acc_eta. unfolds in Hwf. auto.
+Defined.
 
 (* TODO my lord, that proof... *)
 Lemma list1_ind' :
@@ -155,22 +249,3 @@ Proof.
         apply eq_list1_compat. trivial.
       rewrite H2. exists y. simpl. trivial.
 Qed.
-
-(* TODO the following is currently unused *)
-
-Definition length1 {A} (xs : list1 A) := length xs.
-
-Definition length_order {A} (xs ys : list1 A) := length1 xs < length1 ys.
-
-Lemma length_order_wf' :
-  forall A len (xs : list1 A),
-  length1 xs < len ->
-  Acc length_order xs.
-Proof.
-  unfold length_order. induction len; introv H.
-    contradict H. auto with arith.
-    constructor. intros. eauto with arith.
-Defined.
-
-Lemma length_order_wf : forall A, well_founded (length_order (A := A)).
-Proof. red. intros. eapply length_order_wf'. eauto. Defined.
