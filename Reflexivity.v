@@ -1,6 +1,5 @@
 Require Import Equivalence SessionTypes Wellformed Var.
-
-Import Sty Wf.
+Import Eq Sty Wf.
 
 Inductive R_refl : Sty -> Sty -> Prop :=
 | refl_helper_refl :

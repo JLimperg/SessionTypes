@@ -1,5 +1,6 @@
 Require Import SessionTypes.
 
+Module Eq.
 Import Sty.
 
 Inductive sequiv_gen sequiv : Sty -> Sty -> Prop :=
@@ -38,3 +39,5 @@ Proof.
   cofix CIH. intros R H S S' HR. apply H in HR.
   inversion HR; subst; constructor; constructor; apply CIH with (R := R); assumption.
 Qed.
+
+End Eq.
