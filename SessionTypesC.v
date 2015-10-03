@@ -1,6 +1,12 @@
-Require Import Env List List1 Morphisms Msg Relations.Relation_Definitions
-  Relations.Relation_Operators Shape Var Vars.
+Require Import Env List List1 Morphisms Msg Program Relations.Relation_Definitions
+  Relations.Relation_Operators Shape TLC.LibTactics Var Vars.
 Require Setoid.
+Require Program.Basics.
+Require Program.Subset.
+Require Program.Tactics.
+Require Program.Wf.
+Require Recdef.
+Import ListNotations.
 
 Create HintDb styc discriminated.
 
@@ -27,6 +33,23 @@ Fixpoint subst (x : Var) (r orig : Sty) : Sty :=
   | var y => if beq_var x y then r else orig
   end
 .
+
+Definition substc : Vars -> Sty -> Sty.
+Proof.
+  refine (
+    Fix (lt_list1_wf Var) (fun _ => Sty -> Sty)
+    (fun (xs : Vars) (substc : forall (ys : Vars), lt_list1 ys xs -> Sty -> Sty) =>
+      match destruct_list1 xs with
+      | inl X => fun (S : Sty) =>
+          subst X (mu (list_to_list1 X []) S) S
+      | inr (exist3 X Y ZS H) => fun (S : Sty) =>
+          subst X (mu (list_to_list1 X (Y :: ZS)) S)
+                  (substc (list_to_list1 Y ZS) _ S)
+      end
+    )
+  ).
+  unfold lt_list1. unfold list_to_list1. rewrite H. exists X. auto.
+Defined.
 
 Definition shape (S : Sty) : Shape :=
   match S with
