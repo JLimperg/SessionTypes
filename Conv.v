@@ -1,10 +1,12 @@
-Require Import Arith.Lt Env List ListAux List1 Logic.FunctionalExtensionality
-  Morphisms Msg Program.Equality SessionTypes SessionTypesC Shape TLC.LibTactics
-  Var Vars Wellformed WellformedC.
+Require Import Env List ListAux List1 Morphisms Msg SessionTypes
+  SessionTypesC Shape TLC.LibTactics Var Vars Wellformed WellformedC.
 Import ListNotations.
 
 Module R := Sty.
 Module C := StyC.
+
+(*****************************************************************************)
+(* Conversion                                                                *)
 
 Fixpoint sty_styC_aux (xs : list Var) (S : R.Sty) : C.Sty :=
   match S with
@@ -56,8 +58,6 @@ Fixpoint styC_sty (S : C.Sty) : R.Sty :=
 The left fold reverses the variable ordering again to make sty_styC and
 styC_sty inverses of each other.
 *)
-
-Section Inverses.
 
 (* TODO beautify *)
 Lemma styC_sty_inverse_sty_styC_aux :
@@ -144,9 +144,8 @@ Proof.
     [apply Hmu | apply Hnomu]; auto.
 Qed.
 
-End Inverses.
-
-Section Wf.
+(*****************************************************************************)
+(* Wellformedness                                                            *)
 
 Lemma sty_styC_aux_ok_assoc :
   forall S e xs ys x y,
@@ -293,5 +292,3 @@ Proof.
   introv H. rewrite <- env_union_list_neutral with (xs := e). auto with wf.
 Qed.
 Hint Resolve sty_styC_ok : wf.
-
-End Wf.
