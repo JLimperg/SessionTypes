@@ -56,7 +56,7 @@ Fixpoint styC_sty (S : C.Sty) : R.Sty :=
 
 (* [Note fold-left-not-right]
 The left fold reverses the variable ordering again to make sty_styC and
-styC_sty inverses of each other.
+styC_sty inverses of each other (modulo some technicalities).
 *)
 
 (* TODO beautify *)
@@ -339,13 +339,101 @@ Proof.
 
       inverts H as H. inverts H.
 Qed.
-Hint Resolve sty_styC_aux_ok : wf.
 
 Lemma sty_styC_ok :
   forall e S,
   Wf.ok e S ->
   WfC.ok e (sty_styC S).
 Proof.
-  introv H. rewrite <- env_union_list_neutral with (xs := e). auto with wf.
+  introv H. rewrite <- env_union_list_neutral with (xs := e).
+  apply sty_styC_aux_ok. auto.
 Qed.
-Hint Resolve sty_styC_ok : wf.
+
+Lemma sty_styC_wf :
+  forall S,
+  Wf.wellformed S ->
+  WfC.wellformed (sty_styC S).
+Proof. apply sty_styC_ok. Qed.
+
+Lemma fold_right_env_add_snoc :
+  forall e x xs,
+  env_eq (fold_right env_add e (xs ++ [x])) (env_add x (fold_right env_add e xs)).
+Proof.
+  assert (
+    forall xs ys,
+    fold_left (fun S X => env_add X S) ys xs = env_union_list xs ys
+  ) as env_union_list_inv by auto.
+
+  intros.
+  rewrite <- rev_involutive with (l := xs) at 2.
+  rewrite <- rev_involutive with (l := xs ++ [x]).
+  do 2 (rewrite fold_left_rev_right; rewrite env_union_list_inv;
+  rewrite env_union_list_spec). rewrite rev_app_distr. simpl.
+  rewrite env_add_union2. reflexivity.
+Qed.
+
+Lemma checked_mu_chain :
+  forall xs e S,
+  R.shape S <> varS ->
+  Wf.checked (env_union_vars e xs) S ->
+  Wf.checked e (fold_left1 (flip R.mu) xs S).
+Proof.
+  introv Hsh H. destruct xs as [xs HxsNE]. unfold env_union_vars in *.
+  simpl in *. rewrite <- fold_left_rev_right in *. simpl in *.
+  gen e S. clear HxsNE.
+  induction xs; introv Hsh H; [auto |].
+    simpl. rewrite fold_right_app. simpl in *. apply IHxs; [discriminate |].
+      inverts H as H; [exfalso; auto |].
+        constructor. constructor.
+        rewrite <- fold_right_env_add_snoc. auto.
+Qed.
+
+Lemma styC_sty_checked :
+  forall e S,
+  WfC.ok e S ->
+  Wf.checked e (styC_sty S).
+Proof.
+  intros e S. gen e. induction S; introv H; simpl; try solve
+    [inverts H; constructor; auto; constructor; auto].
+
+    apply checked_mu_chain.
+      destruct S; simpl; try discriminate; inverts H; exfalso; auto.
+      inverts H. auto.
+Qed.
+
+Lemma ok_mu_chain :
+  forall xs e S,
+  Wf.ok (env_union_vars e xs) S ->
+  Wf.ok e (fold_left1 (flip R.mu) xs S).
+Proof.
+  introv H. destruct xs as [xs HxsNE]. unfold env_union_vars in *.
+  simpl in *. rewrite <- fold_left_rev_right in *. simpl in *.
+  gen e S. clear HxsNE.
+  induction xs; introv H; [auto |].
+    simpl. rewrite fold_right_app. simpl in *. apply IHxs.
+      constructor.
+      rewrite <- fold_right_env_add_snoc. auto.
+Qed.
+
+Lemma styC_sty_ok :
+  forall S e,
+  C.shape S <> varS ->
+  WfC.ok e S ->
+  Wf.ok e (styC_sty S).
+Proof.
+  induction S; introv Hsh H; simpl; try solve
+    [inverts H; constructor; apply styC_sty_checked; auto].
+
+    inverts H. apply ok_mu_chain. apply IHS; auto.
+
+    exfalso; auto.
+Qed.
+
+Lemma styC_sty_wf :
+  forall S,
+  WfC.wellformed S ->
+  Wf.wellformed (styC_sty S).
+Proof.
+  introv H. destruct S; try (apply styC_sty_ok; [discriminate | auto]).
+    inverts H as H. inverts H.
+Qed.

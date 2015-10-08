@@ -12,3 +12,8 @@ Proof.
     apply functional_extensionality. auto.
   rewrite Hf. trivial.
 Qed.
+
+Lemma fold_right_snoc :
+  forall A B (f : A -> B -> B) a0 x xs,
+  fold_right f a0 (xs ++ [x]) = fold_right f (f x a0) xs.
+Proof. intros. rewrite fold_right_app. auto. Qed.
