@@ -1,4 +1,4 @@
-Require Import SessionTypesC.
+Require Import List1 SessionTypesC.
 
 Module EqC.
 Import StyC.
@@ -20,10 +20,10 @@ Inductive sequiv_gen sequiv : Sty -> Sty -> Prop :=
     sequiv S2 S2' ->
     sequiv_gen sequiv (ichoice S1 S2) (ichoice S1' S2')
 | sequiv_gen_mu1 : forall XS S S',
-    sequiv (substc XS S) S' ->
+    sequiv (substc (projT1 XS) S) S' ->
     sequiv_gen sequiv (mu XS S) S'
 | sequiv_gen_mu2 : forall XS S S',
-    sequiv S (substc XS S') ->
+    sequiv S (substc (projT1 XS) S') ->
     sequiv_gen sequiv S (mu XS S')
 .
 Hint Constructors sequiv_gen.

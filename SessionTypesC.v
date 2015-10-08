@@ -34,22 +34,12 @@ Fixpoint subst (x : Var) (r orig : Sty) : Sty :=
   end
 .
 
-Definition substc : Vars -> Sty -> Sty.
-Proof.
-  refine (
-    Fix (lt_list1_wf Var) (fun _ => Sty -> Sty)
-    (fun (xs : Vars) (substc : forall (ys : Vars), lt_list1 ys xs -> Sty -> Sty) =>
-      match destruct_list1 xs with
-      | inl X => fun (S : Sty) =>
-          subst X (mu (list_to_list1 X []) S) S
-      | inr (exist3 X Y ZS H) => fun (S : Sty) =>
-          subst X (mu (list_to_list1 X (Y :: ZS)) S)
-                  (substc (list_to_list1 Y ZS) _ S)
-      end
-    )
-  ).
-  unfold lt_list1. unfold list_to_list1. rewrite H. exists X. auto.
-Defined.
+Fixpoint substc (xs : list Var) (S : Sty) :=
+  match xs with
+  | [] => S
+  | x :: xs' => subst x (mu (list_to_list1 x xs') S) (substc xs' S)
+  end
+.
 
 Definition shape (S : Sty) : Shape :=
   match S with
