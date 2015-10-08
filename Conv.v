@@ -1,4 +1,4 @@
-Require Import Env List ListAux List1 Morphisms Msg SessionTypes
+Require Import Env List ListAux List1 Morphisms Msg Program.Basics SessionTypes
   SessionTypesC Shape TLC.LibTactics Var Vars Wellformed WellformedC.
 Import ListNotations.
 
@@ -142,6 +142,63 @@ Proof.
   intros. remember styC_sty_inverse_sty_styC_aux as H.
   edestruct H as [Hnomu Hmu]. destruct (R.shape_dec S muS);
     [apply Hmu | apply Hnomu]; auto.
+Qed.
+
+Lemma sty_styC_aux_mu_chain1 :
+  forall xs ys x S,
+  sty_styC_aux xs (fold_left1 (flip R.mu) ys (R.mu x S)) =
+  sty_styC_aux (projT1 (app1 ys xs)) (R.mu x S).
+Proof.
+  intros. destruct ys as [ys HysNE]. simpl. unfold flip.
+  rewrite <- fold_left_rev_right. gen x xs S. clear HysNE.
+  induction ys; intros; auto.
+    simpl in *. rewrite fold_right_app. simpl. rewrite IHys. auto.
+Qed.
+
+Lemma sty_styC_mu_chain2 :
+  forall xs ys x S,
+  R.shape S <> muS ->
+  sty_styC_aux xs (fold_left1 (fun S X => R.mu X S) ys (R.mu x S)) =
+  C.mu (cons1 x (app1 ys xs)) (sty_styC S).
+Proof.
+  assert (
+    forall A (x : A) xs ys HxsNE,
+    mkList1 (x :: projT1 (app1 xs ys)) HxsNE = cons1 x (app1 xs ys)
+  ) as H.
+    intros; destruct xs; destruct ys; simpl; apply eq_list1_compat; auto.
+
+  introv Hsh. rewrite sty_styC_aux_mu_chain1.
+  destruct S; try solve [simpl; rewrite H; auto]. exfalso; auto.
+Qed.
+
+Lemma sty_styC_inverse_styC_sty :
+  forall S e,
+  WfC.ok e S ->
+  sty_styC (styC_sty S) = S.
+Proof.
+  induction S; introv H; simpl; trivial; try solve
+    [inverts H; first [ erewrite IHS; eauto
+                      | erewrite IHS1; eauto; erewrite IHS2; eauto
+                      ]].
+
+    induction l using list1_ind'.
+      destruct S; simpl in *; trivial; inverts H; solve
+        [erewrite IHS; eauto | exfalso; auto].
+
+      destruct l. simpl in *.
+      asserts_rewrite (
+        fold_left (fun S X => R.mu X S) x0 (R.mu x (styC_sty S)) =
+        fold_left1 (fun S X => R.mu X S) (mkList1 x0 n) (R.mu x (styC_sty S))
+      ).
+        auto.
+      rewrite sty_styC_mu_chain2. simpl.
+      asserts_rewrite (
+        mkList1 (x :: x0 ++ []) (cons_not_nil Var x (x0 ++ [])) =
+        mkList1 (x :: x0)       (cons_not_nil Var x x0)
+      ).
+        apply eq_list1_compat. simpl_list. auto.
+      inverts H. erewrite IHS; eauto.
+      inverts H. destruct S; auto.
 Qed.
 
 (*****************************************************************************)

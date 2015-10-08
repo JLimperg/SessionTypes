@@ -25,6 +25,12 @@ Lemma cons_not_nil :
   nonempty (x :: xs).
 Proof. intros. unfold not; discriminate. Qed.
 
+Lemma nonempty_app :
+  forall A (xs ys : list A),
+  nonempty ys ->
+  nonempty (xs ++ ys).
+Proof. intro. induction xs; auto. intros. simpl. apply cons_not_nil. Qed.
+
 (*****************************************************************************)
 (* The type of nonempty lists                                                *)
 
@@ -140,6 +146,31 @@ Definition fold_left1 {A B} (f : B -> A -> B) (xs : list1 A) (b0 : B) :=
   fold_left f (proj1_sig xs) b0.
 Hint Unfold fold_left1 : list1.
 Arguments fold_left1 / _ _ _ _ _.
+
+(*****************************************************************************)
+(* Misc. operations                                                          *)
+
+Definition app1 {A} (xs : list1 A) (ys : list A) : list1 A.
+  refine (
+    match xs with
+    | (existT xs' _) => existT _ (xs' ++ ys) _
+    end
+  ).
+  destruct xs' as [_ | x xs'].
+    exfalso; auto.
+    simpl. apply cons_not_nil.
+Defined.
+
+Definition rev1 {A} (xs : list1 A) : list1 A.
+  refine (
+    match xs with
+    | existT xs' _ => existT _ (rev xs') _
+    end
+  ).
+  destruct xs' as [_ | x xs']; auto.
+    simpl. apply nonempty_app.
+    unfold nonempty; unfold not; intros; discriminate.
+Defined.
 
 (*****************************************************************************)
 (* Well-founded induction                                                    *)
