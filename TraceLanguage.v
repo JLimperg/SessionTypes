@@ -4,9 +4,6 @@ Require Setoid.
 
 Create HintDb tl discriminated.
 
-Import Wf.
-Import Sty.
-
 CoInductive Tl :=
 | tl_unit : Tl                (* {epsilon} *)
 | tl_send : Msg -> Tl -> Tl   (* {!B} . L *)

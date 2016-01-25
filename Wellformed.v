@@ -3,10 +3,6 @@ Require Import Env Morphisms SessionTypes Program.Basics Msg TLC.LibTactics
 
 Create HintDb wf discriminated.
 
-Module Wf.
-
-Import Sty.
-
 Inductive ok : Env -> Sty -> Prop :=
 | ok_end :
     forall xs, ok xs unit
@@ -226,5 +222,3 @@ Lemma wellformed_inversion_mu : forall X S,
   wellformed (mu X S) -> wellformed (subst X (mu X S) S).
 Proof with auto. intros X S. apply wellformed_inversion... apply (mkMsg 0). Qed.
 Hint Resolve wellformed_inversion_mu : wf.
-
-End Wf.

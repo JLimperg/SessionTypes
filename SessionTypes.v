@@ -1,7 +1,5 @@
 Require Import Env Msg Shape Var.
 
-Module Sty.
-
 Inductive Sty : Set :=
 | unit : Sty
 | send : Msg -> Sty -> Sty
@@ -39,5 +37,3 @@ Definition shape (S : Sty) : Shape :=
 Lemma shape_dec :
   forall S sh, {shape S = sh} + {shape S <> sh}.
 Proof. decide equality. Qed.
-
-End Sty.
