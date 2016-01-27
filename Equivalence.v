@@ -1,4 +1,4 @@
-Require Import SessionTypes Substitution TLC.LibTactics.
+Require Import SessionTypes Substitution Tac.
 
 Inductive sequiv_gen sequiv : Sty -> Sty -> Prop :=
 | sequiv_gen_end : sequiv_gen sequiv unit unit

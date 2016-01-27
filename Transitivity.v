@@ -1,4 +1,4 @@
-Require Import Equivalence Reflexivity SessionTypes TLC.LibTactics Wellformed.
+Require Import Equivalence Reflexivity SessionTypes Tac Wellformed.
 
 Theorem sequiv_transitive :
   forall S T U,

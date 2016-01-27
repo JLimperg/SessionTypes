@@ -1,4 +1,4 @@
-Require Import List Logic.ProofIrrelevance TLC.LibTactics.
+Require Import List Logic.ProofIrrelevance Tac.
 Import ListNotations.
 
 Create HintDb list1 discriminated.

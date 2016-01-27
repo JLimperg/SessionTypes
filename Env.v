@@ -1,8 +1,7 @@
 (* TODO This file could probably do with a little more structure, consistent
    naming and such. *)
 
-Require Import List1 MSetList MSetProperties Program.Basics TLC.LibTactics Var
-  Vars.
+Require Import List1 MSetList MSetProperties Program.Basics Tac Var Vars.
 
 Module S := MSetList.Make VarOrder.
 Module SF := MSetProperties.WPropertiesOn VarOrder S.
