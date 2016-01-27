@@ -1,4 +1,4 @@
-Require Import SessionTypes.
+Require Import SessionTypes Substitution TLC.LibTactics.
 
 Inductive sequiv_gen sequiv : Sty -> Sty -> Prop :=
 | sequiv_gen_end : sequiv_gen sequiv unit unit
@@ -32,7 +32,4 @@ Hint Constructors sequiv.
 Lemma sequiv_coind : forall R,
   (forall S S', R S S' -> sequiv_gen R S S')
   -> (forall S S', R S S' -> sequiv S S').
-Proof.
-  cofix CIH. intros R H S S' HR. apply H in HR.
-  inversion HR; subst; constructor; constructor; apply CIH with (R := R); assumption.
-Qed.
+Proof. cofix CIH. introv H HR. apply H in HR. inverts HR; eauto. Qed.

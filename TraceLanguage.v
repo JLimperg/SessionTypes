@@ -1,6 +1,6 @@
-Require Import SessionTypes Wellformed Relations.Relation_Definitions
-  Relations.Relation_Operators Rel Logic.FunctionalExtensionality Msg Var.
-Require Setoid.
+Require Import Relations.Relation_Definitions Relations.Relation_Operators
+  Logic.FunctionalExtensionality Setoid.
+Require Import Msg Rel SessionTypes Substitution Var Wellformed.
 
 Create HintDb tl discriminated.
 

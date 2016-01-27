@@ -1,5 +1,5 @@
-Require Import Env Morphisms SessionTypes Program.Basics Msg TLC.LibTactics
-  Var.
+Require Import Env Morphisms SessionTypes Substitution Program.Basics Msg
+  TLC.LibTactics Var.
 
 Create HintDb wf discriminated.
 
