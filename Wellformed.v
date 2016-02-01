@@ -1,5 +1,5 @@
-Require Import Env Morphisms SessionTypes Substitution Program.Basics Msg Tac
-  Var.
+Require Import Env Morphisms SessionTypes Substitution Program.Basics Msg
+  Shape Tac Var.
 
 Create HintDb wf discriminated.
 
@@ -42,8 +42,13 @@ with
 Hint Constructors ok : wf.
 Hint Constructors checked : wf.
 
+Scheme ok_ind_mut := Induction for ok Sort Prop
+with checked_ind_mut := Induction for checked Sort Prop.
+
 Definition wellformed S := ok env_empty S.
 Hint Unfold wellformed : wf.
+
+Notation ok_some S := (exists XS, ok XS S).
 
 Lemma ok_checked_subset :
   forall S e e',
@@ -222,3 +227,15 @@ Lemma wellformed_inversion_mu : forall X S,
   wellformed (mu X S) -> wellformed (subst X (mu X S) S).
 Proof with auto. intros X S. apply wellformed_inversion... apply (mkMsg 0). Qed.
 Hint Resolve wellformed_inversion_mu : wf.
+
+
+Lemma ok_mu_shape :
+  forall XS X S,
+  ok XS (mu X S) ->
+  shape S = unitS \/
+  shape S = sendS \/
+  shape S = recvS \/
+  shape S = echoiceS \/
+  shape S = ichoiceS \/
+  shape S = muS.
+Proof. introv Hok. inverts2 Hok; iauto. Qed.
