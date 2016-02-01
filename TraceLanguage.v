@@ -250,7 +250,7 @@ Proof with (eauto with tl).
     try (solve [inversion_clear HL; inversion_clear HL'; constructor; eauto with tl]).
 
     inversion_clear HL. inversion_clear HL'. apply IHS with (eta := (eta_override eta v L)).
-Admitted.
+Abort.
 
 
 Inductive R_subst_tl_1 (X : Var) (T : Sty) (LT : Tl) :
@@ -364,7 +364,7 @@ Proof with (eauto with tl wf).
     inversion_clear H1. inversion_clear H. inversion_clear H1. inversion_clear
     H. inversion_clear H1. constructor. constructor 2 with (X := X). simpl in H0.
   *)
-Admitted.
+Abort.
 
 Lemma subst_tl :
   forall X T LT eta S L,
@@ -406,4 +406,4 @@ Proof with (auto with tl env).
         unfold override.
         assert ((fun x : Var => if beq_var x X then LT else eta0 x) v = L) as H'.
           rewrite beq_var_sym. rewrite Hxv.
-Admitted.
+Abort.
