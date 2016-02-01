@@ -8,3 +8,6 @@ Ltac decompose_ex H :=
   end
 .
 
+Ltac invertsN n H := do n (inverts H as H).
+Ltac inverts1 := invertsN ltac:1.
+Ltac inverts2 := invertsN ltac:2.
