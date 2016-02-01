@@ -1,4 +1,4 @@
-Require Import Env Msg Var.
+Require Import Msg Var.
 
 Inductive Sty : Set :=
 | unit : Sty
