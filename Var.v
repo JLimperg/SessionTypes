@@ -1,3 +1,4 @@
+Require Import Tac.
 Require Import Arith Orders CompareFacts.
 
 Create HintDb env discriminated.
@@ -11,20 +12,24 @@ Lemma eq_var_dec : forall (X Y : Var), {X = Y} + {X <> Y}.
 Proof. decide equality. apply eq_nat_dec. Defined.
 Hint Immediate eq_var_dec : env.
 
-Definition beq_var x y := if eq_var_dec x y then true else false.
+Definition beq_var x y :=
+  match (x, y) with
+  | (mkVar x', mkVar y') => beq_nat x' y'
+  end
+.
 Hint Unfold beq_var : env.
 
 Lemma beq_var_refl : forall x, true = beq_var x x.
-Proof with (auto).
-  intros. unfold beq_var. destruct (eq_var_dec x x)... contradict n... Qed.
+Proof. intros. destruct x; unfold beq_var; apply beq_nat_refl. Qed.
 Hint Resolve beq_var_refl : env.
 
 Lemma beq_var_true_iff : forall x y, x = y <-> beq_var x y = true.
 Proof with (auto with env).
-  intros x y. split; intros H.
-    rewrite H...
-    unfold beq_var in H. destruct (eq_var_dec x y)...
-      contradict n. discriminate.
+  intros. split; intros H.
+    rewrite H; auto with env.
+
+    destruct x; destruct y; unfold beq_var in *. rewrite beq_nat_true_iff in H.
+    rewrite H. auto.
 Qed.
 Hint Resolve beq_var_true_iff : env.
 
@@ -34,12 +39,11 @@ Hint Resolve beq_var_true : env.
 
 Lemma beq_var_false_iff : forall x y, x <> y <-> beq_var x y = false.
 Proof with (auto with env).
-  intros x y. split; intros H.
-    unfold beq_var. destruct (eq_var_dec x y)...
-      contradict H...
+  intros x y. split; intros H; destruct x; destruct y.
+    unfold beq_var. apply beq_nat_false_iff. auto.
 
-    intro H'. unfold beq_var in H. destruct (eq_var_dec x y)...
-      discriminate.
+    introv contra. rewrite contra in H. rewrite <- beq_var_refl in H.
+    discriminate.
 Qed.
 Hint Resolve beq_var_false_iff : env.
 
@@ -60,10 +64,7 @@ Proof. induction x; intros y; destruct y; simpl; auto. Qed.
 Hint Resolve beq_nat_sym : env.
 
 Lemma beq_var_sym : forall x y, beq_var x y = beq_var y x.
-Proof with auto.
-  intros. unfold beq_var. destruct (eq_var_dec x y); destruct (eq_var_dec y x)...
-    contradict n...
-Qed.
+Proof. intros. destruct x; destruct y; unfold beq_var. apply beq_nat_sym. Qed.
 
 Module VarOrder <: OrderedType.
 
