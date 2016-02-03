@@ -76,6 +76,7 @@ Qed.
 
 Definition lt_Sty_mu_prefix2 : Sty * Sty -> Sty * Sty -> Prop :=
   symprod Sty Sty lt_Sty_mu_prefix lt_Sty_mu_prefix.
+Hint Unfold lt_Sty_mu_prefix2.
 
 
 Lemma lt_Sty_mu_prefix2_wf : well_founded lt_Sty_mu_prefix2.

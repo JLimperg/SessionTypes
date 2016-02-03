@@ -37,7 +37,6 @@ Lemma sequiv_coind : forall R,
 Proof. cofix CIH. introv H HR. apply H in HR. inverts HR; eauto. Qed.
 
 
-(* TODO beautify *)
 Lemma sequiv_shape :
   forall S S',
   ok_some S ->
@@ -45,12 +44,12 @@ Lemma sequiv_shape :
   sequiv S S' ->
   shape (substall S) = shape (substall S').
 Proof.
-  intros S S'. set (p := (S, S')).
+  intros S S'.
   apply well_founded_induction_type_2 with
     (R := lt_Sty_mu_prefix2)
     (P := fun S S' => ok_some S -> ok_some S' -> sequiv S S' ->
      shape (substall S) = shape (substall S')).
-  apply lt_Sty_mu_prefix2_wf. clear S S' p.
+  apply lt_Sty_mu_prefix2_wf. clear S S'.
 
   intros S S' IH HokS HokS' Heq. inverts2 Heq; auto; decompose_ex HokS;
     decompose_ex HokS'.
@@ -58,19 +57,13 @@ Proof.
     rename S0 into S. simpl. inversion HokS; subst.
     rewrite shape_subst_substall_1 with (XS := env_add X XS); auto.
     rewrite shape_subst_substall_2 with (XS := XS) (X := X) (R := mu X S); auto.
-    apply IH.
-      constructor. apply lt_Sty_mu_prefix_subst. eauto.
-      eexists. eapply subst_preserves_wellformedness; eauto.
-      eauto.
-      auto.
+    apply IH; eauto using subst_preserves_wellformedness.
+      constructor; eauto using lt_Sty_mu_prefix_subst.
 
     rename S'0 into S'. simpl. inversion HokS'; subst.
     rewrite shape_subst_substall_1 with (XS := env_add X XS0); auto.
     asserts_rewrite (shape (substall S') = shape (substall (subst X (mu X S') S'))).
       apply shape_subst_substall_2 with (XS := XS0); auto.
-    apply IH.
-      constructor. apply lt_Sty_mu_prefix_subst. eauto.
-      eauto.
-      eexists. eapply subst_preserves_wellformedness; eauto.
-      auto.
+    apply IH; eauto using subst_preserves_wellformedness.
+      constructor; eauto using lt_Sty_mu_prefix_subst.
 Qed.
