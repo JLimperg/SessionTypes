@@ -16,18 +16,3 @@ Hint Constructors Free : free.
 Definition Closed (S : Sty) : Prop :=
   forall X, ~ Free X S.
 Hint Unfold Closed : free.
-
-
-Hint Extern 0 =>
-  match goal with
-  | H : Free _ unit |- _ =>
-      solve [inversion H]
-  end
-: free.
-
-Hint Extern 0 =>
-  match goal with
-  | H : Free ?X (mu ?X _) |- _ =>
-      solve [inverts H; exfalso; auto]
-  end
-: free.

@@ -35,8 +35,10 @@ Lemma subst_preserves_free :
   Free X S ->
   Free X (subst Y R S).
 Proof.
-  induction S; introv Hneq Hfree; simpl; auto with free.
-    destruct (beq_var Y v) eqn:HYeqv; auto with env free.
+  induction S; introv Hneq Hfree; simpl; auto with free; try solve
+    [inverts1 Hfree; decompose_or Hfree; auto with free].
+    destruct (beq_var Y v) eqn:HYeqv; auto with free.
+      constructor; auto with free. inverts1 Hfree. auto.
     inverts Hfree. rewrite beq_var_neq; auto with free.
 Qed.
 
@@ -56,8 +58,7 @@ Proof.
     destruct (beq_var Y v) eqn:HYeqv.
       apply beq_var_true_iff in HYeqv. subst. inversion H. iauto.
       inverts1 H. apply IHS in H. destruct H; intuition (auto with free).
-    destruct (beq_var Y v) eqn:HYeqv.
-      auto.
+    destruct (beq_var Y v) eqn:HYeqv; [auto|].
       inverts1 H. apply beq_var_false_iff in HYeqv. auto with free.
 Qed.
 
@@ -94,18 +95,15 @@ Lemma subst_nonfree :
   ~ Free X (subst X R S).
 Proof.
   introv HR. destruct (Free_dec S X) as [HS | HS].
-    gen S. induction S; introv HS; unfold not in *.
-      auto with free.
-      auto with free.
-      auto with free.
+    gen S. induction S; introv HS; auto with free.
 
       introv H. simpl in H. inverts1 H. destruct H;
-        [destruct (Free_dec S1 X) | destruct (Free_dec S2 X)]; auto;
-          rewrite subst_neutral in H; auto.
+        [destruct (Free_dec S1 X) | destruct (Free_dec S2 X)]; unfold not in *;
+          auto; rewrite subst_neutral in H; auto.
 
       introv H. simpl in H. inverts1 H. destruct H;
-        [destruct (Free_dec S1 X) | destruct (Free_dec S2 X)]; auto;
-          rewrite subst_neutral in H; auto.
+        [destruct (Free_dec S1 X) | destruct (Free_dec S2 X)]; unfold not in *;
+          auto; rewrite subst_neutral in H; auto.
 
       inverts HS. simpl. rewrite beq_var_neq; auto with free.
 
