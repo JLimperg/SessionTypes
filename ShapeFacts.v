@@ -33,7 +33,7 @@ Ltac shape_inv H :=
   in
     match type of H with
     | shape ?S = ?sh => inv S sh H
-    | ?sh = shape ?S => inv S sh H
+    | ?sh = shape ?S => symmetry in H; shape_inv H
     end
 .
 
@@ -41,6 +41,7 @@ Ltac shape_inv H :=
 Ltac shape_inv_auto :=
   match goal with
   | H : shape _ = _ |- _ => shape_inv H
+  | H : _ = shape _ |- _ => shape_inv H
   end;
   try shape_inv_auto
 .
