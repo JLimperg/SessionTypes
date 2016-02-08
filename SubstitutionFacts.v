@@ -1,5 +1,5 @@
-Require Import Env Free FreeFacts SessionTypes Shape ShapeFacts Substitution
-  Tac Var Wellformed.
+Require Import Env Free FreeFacts SessionTypes SessionTypesInd Shape ShapeFacts
+  Substitution Tac Var Wellformed.
 
 Create HintDb subst discriminated.
 
@@ -63,29 +63,36 @@ Proof.
 Qed.
 
 
-Lemma substall_shape :
-  forall XS S,
+Lemma cs_det :
+  forall S XS T1 T2,
   ok XS S ->
-  shape (substall S) = unitS \/
-  shape (substall S) = sendS \/
-  shape (substall S) = recvS \/
-  shape (substall S) = ichoiceS \/
-  shape (substall S) = echoiceS.
+  cs S T1 ->
+  cs S T2 ->
+  T1 = T2.
 Proof.
-  introv Hwf. induction Hwf; simpl in *; solve
-    [iauto | decompose sum IHHwf; simpl in *; shape_inv_auto; iauto].
+  induction S using (well_founded_ind lt_Sty_mu_prefix_wf).
+  introv Hok H1 H2; inverts H1; inverts H2; auto with subst.
+    pose proof Hok. inverts1 Hok.
+    eapply H with (y := subst X (mu X S0) S0);
+      eauto using subst_preserves_wellformedness, lt_Sty_mu_prefix_subst.
 Qed.
 
 
-Lemma substall_preserves_free :
-  forall S X,
-  Free X S <-> Free X (substall S).
+Lemma cs_shape :
+  forall S S' XS,
+  ok XS S ->
+  cs S S' ->
+  shape S' = unitS \/
+  shape S' = sendS \/
+  shape S' = recvS \/
+  shape S' = ichoiceS \/
+  shape S' = echoiceS.
 Proof.
-  induction S; split; introv H; auto with free.
-    simpl. inverts H. rewrite IHS in H3. apply subst_preserves_free; auto.
-
-    simpl in H. apply free_subst_inversion in H; destruct H; [auto|..].
-    destruct H as [H H']. apply IHS in H'. auto with free.
+  induction S using (well_founded_ind lt_Sty_mu_prefix_wf); introv Hok Hcs;
+    inverts Hcs; auto.
+  - pose proof Hok. inverts1 Hok. eapply H with (y := subst X (mu X S0) S0);
+      eauto using subst_preserves_wellformedness, lt_Sty_mu_prefix_subst.
+  - inverts Hok.
 Qed.
 
 
@@ -110,47 +117,4 @@ Proof.
       inverts HS. simpl. rewrite <- beq_var_refl; auto.
 
   introv H. rewrite subst_neutral in H; auto with free.
-Qed.
-
-
-Lemma subst_substall_distr_nonfree :
-  forall S X R,
-  ~ Free X S ->
-  subst X R (substall S) = substall (subst X R S).
-Proof.
-  introv Hfree. rewrite subst_neutral. rewrite subst_neutral; auto.
-  introv H. apply substall_preserves_free in H. auto.
-Qed.
-
-
-Lemma shape_subst_substall_1 :
-  forall XS X R S,
-  ok XS S ->
-  shape (subst X R (substall S)) = shape (substall S).
-Proof.
-  introv Hok. pose proof (substall_shape XS S Hok) as H.
-  decompose sum H; clear H; shape_inv_auto; auto.
-Qed.
-
-
-Lemma shape_subst_substall_2 :
-  forall S XS X R,
-  ok XS R ->
-  ok (env_add X XS) S ->
-  shape (substall S) = shape (substall (subst X R S)).
-Proof.
-  induction S; introv HokR HokS; eauto.
-    simpl. destruct (beq_var X v) eqn:HXv; simpl.
-      inverts1 HokS. erewrite shape_subst_substall_1; eauto.
-
-      inverts1 HokS. erewrite shape_subst_substall_1; [|eauto].
-      rewrite shape_subst_substall_1 with (XS := env_add v XS).
-        apply IHS with (XS := env_add v XS).
-          auto with wf.
-          rewrite env_add_assoc; auto.
-        apply subst_preserves_wellformedness.
-          auto with wf.
-          rewrite env_add_assoc; auto.
-
-    inverts HokS.
 Qed.
