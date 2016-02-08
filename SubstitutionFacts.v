@@ -1,7 +1,5 @@
-Require Import Env Free FreeFacts SessionTypes SessionTypesInd Shape ShapeFacts
-  Substitution Tac Var Wellformed.
-
-Create HintDb subst discriminated.
+Require Import Env Equivalence Free FreeFacts SessionTypes SessionTypesInd
+  Shape ShapeFacts Substitution Tac Var Wellformed.
 
 Lemma subst_preserves_shape :
   forall S X r,
@@ -40,6 +38,30 @@ Proof.
     destruct (beq_var Y v) eqn:HYeqv; auto with free.
       constructor; auto with free. inverts1 Hfree. auto.
     inverts Hfree. rewrite beq_var_neq; auto with free.
+Qed.
+
+
+Lemma subst_nonfree :
+  forall S X R,
+  ~ Free X R ->
+  ~ Free X (subst X R S).
+Proof.
+  introv HR. destruct (Free_dec S X) as [HS | HS].
+    gen S. induction S; introv HS; auto with free.
+
+      introv H. simpl in H. inverts1 H. destruct H;
+        [destruct (Free_dec S1 X) | destruct (Free_dec S2 X)]; unfold not in *;
+          auto; rewrite subst_neutral in H; auto.
+
+      introv H. simpl in H. inverts1 H. destruct H;
+        [destruct (Free_dec S1 X) | destruct (Free_dec S2 X)]; unfold not in *;
+          auto; rewrite subst_neutral in H; auto.
+
+      inverts HS. simpl. rewrite beq_var_neq; auto with free.
+
+      inverts HS. simpl. rewrite <- beq_var_refl; auto.
+
+  introv H. rewrite subst_neutral in H; auto with free.
 Qed.
 
 
@@ -96,25 +118,35 @@ Proof.
 Qed.
 
 
-Lemma subst_nonfree :
-  forall S X R,
-  ~ Free X R ->
-  ~ Free X (subst X R S).
+(* TODO beautify. Perhaps use that sequiv is symmetric. *)
+Lemma cs_preserves_sequiv :
+  forall S S',
+  forall csS csS' XS XS',
+  ok XS S ->
+  ok XS' S' ->
+  cs S csS ->
+  cs S' csS' ->
+  sequiv S S' ->
+  sequiv csS csS'.
 Proof.
-  introv HR. destruct (Free_dec S X) as [HS | HS].
-    gen S. induction S; introv HS; auto with free.
-
-      introv H. simpl in H. inverts1 H. destruct H;
-        [destruct (Free_dec S1 X) | destruct (Free_dec S2 X)]; unfold not in *;
-          auto; rewrite subst_neutral in H; auto.
-
-      introv H. simpl in H. inverts1 H. destruct H;
-        [destruct (Free_dec S1 X) | destruct (Free_dec S2 X)]; unfold not in *;
-          auto; rewrite subst_neutral in H; auto.
-
-      inverts HS. simpl. rewrite beq_var_neq; auto with free.
-
-      inverts HS. simpl. rewrite <- beq_var_refl; auto.
-
-  introv H. rewrite subst_neutral in H; auto with free.
+  refine (
+    Sty_ind_mu_prefix2
+      (fun S S' => forall csS csS' XS XS',
+        ok XS S ->
+        ok XS' S' ->
+        cs S csS ->
+        cs S' csS' ->
+        sequiv S S' ->
+        sequiv csS csS')
+      _
+  ).
+  introv IH Hok Hok' Hcs Hcs' Heq. inverts2 Heq; inverts1 Hcs; inverts1 Hcs';
+    auto; solve
+    [ pose proof Hok; inverts1 Hok; eapply IH with (T := (subst X (mu X S0) S0));
+        eauto using lt_Sty_mu_prefix_subst, subst_preserves_wellformedness
+        with subst
+    | pose proof Hok'; inverts Hok'; eapply IH with (T' := (subst X (mu X S'0) S'0));
+        eauto using lt_Sty_mu_prefix_subst, subst_preserves_wellformedness
+        with subst
+    ].
 Qed.
