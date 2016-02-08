@@ -74,10 +74,26 @@ Proof.
 Qed.
 
 
+(*****************************************************************************)
+(* The same for symmetric products *)
+
+
 Definition lt_Sty_mu_prefix2 : Sty * Sty -> Sty * Sty -> Prop :=
   symprod Sty Sty lt_Sty_mu_prefix lt_Sty_mu_prefix.
 Hint Unfold lt_Sty_mu_prefix2.
+Hint Constructors symprod.
 
 
 Lemma lt_Sty_mu_prefix2_wf : well_founded lt_Sty_mu_prefix2.
 Proof. apply wf_symprod; apply lt_Sty_mu_prefix_wf. Defined.
+
+
+Lemma Sty_ind_mu_prefix2 :
+  forall (P : Sty -> Sty -> Prop),
+  (forall S S',
+    (forall T T', lt_Sty_mu_prefix2 (T, T') (S, S') -> P T T') ->
+    P S S') ->
+  forall S S', P S S'.
+Proof.
+  intro P. apply (well_founded_induction_type_2 P lt_Sty_mu_prefix2_wf).
+Qed.
