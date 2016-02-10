@@ -1,4 +1,6 @@
-Require Import Equivalence SessionTypes Substitution Wellformed Var.
+Require Import Equivalence SessionTypes Substitution Tac Var Wellformed.
+
+Create HintDb refl discriminated.
 
 Inductive R_refl : Sty -> Sty -> Prop :=
 | refl_helper_refl :
@@ -14,24 +16,19 @@ Inductive R_refl : Sty -> Sty -> Prop :=
     wellformed (subst X (mu X S) S) ->
     R_refl (subst X (mu X S) S) (mu X S)
 .
-Hint Constructors R_refl.
+Hint Constructors R_refl : refl.
 
 Lemma R_refl_reflexivity :
   (forall S S', R_refl S S' -> sequiv S S')
   -> (forall S, wellformed S -> sequiv S S).
-Proof. auto. Qed.
+Proof. auto with refl. Qed.
 
 Theorem sequiv_reflexive :
   forall S,
   wellformed S ->
   sequiv S S.
-Proof with auto.
+Proof.
   apply R_refl_reflexivity. apply sequiv_coind.
-  intros S S' H. inversion_clear H.
-    destruct S';
-      try (constructor; constructor; apply wellformed_inversion in H0;
-        try (apply H0); repeat constructor).
-      inversion H0.
-      constructor. constructor...
-      constructor. constructor...
+  introv H. inverts1 H; [destruct S'|..]; auto with wf refl.
+  - do 2 constructor. apply subst_preserves_wellformedness; auto with wf.
 Qed.

@@ -46,7 +46,13 @@ Scheme ok_ind_mut := Induction for ok Sort Prop
 with checked_ind_mut := Induction for checked Sort Prop.
 
 Definition wellformed S := ok env_empty S.
-Hint Unfold wellformed : wf.
+
+Hint Extern 1 =>
+  match goal with
+  | H : wellformed _ |- _ => unfold wellformed in H
+  | |- wellformed _ => unfold wellformed
+  end
+.
 
 Notation ok_some S := (exists XS, ok XS S).
 
@@ -160,73 +166,7 @@ Proof with (auto with env wf).
         apply ok_add...
         rewrite env_add_assoc...
 Qed.
-
-Lemma wellformed_inversion :
-  forall S S1 S2 B X,
-     (wellformed (send B S) -> wellformed S)
-  /\ (wellformed (recv B S) -> wellformed S)
-  /\ (wellformed (echoice S1 S2) -> wellformed S1 /\ wellformed S2)
-  /\ (wellformed (ichoice S1 S2) -> wellformed S1 /\ wellformed S2)
-  /\ (wellformed (mu X S) -> wellformed (subst X (mu X S) S)).
-Proof with (auto with env).
-  let rec prefix := inversion_clear H; inversion_clear H0
-  with    csr    := prefix; [auto | contradict H]
-  with    cch    := prefix; [contradict H | inversion_clear H1; [contradict H0 | split; assumption]]
-  with    cmu    := apply subst_preserves_wellformedness; auto with env; inversion H; auto with env
-  in
-  intros S S1 S2 B X; unfold wellformed in *; repeat split; try (intro H);
-    try (solve [cmu]); inversion_clear H; inversion_clear H0; try assumption;
-    try (solve [contradict H; auto with env]);
-    inversion_clear H1;
-    try (solve [contradict H0; auto with env | auto with env]).
-Qed.
-
-Lemma wellformed_inversion_send : forall B S,
-  wellformed (send B S) -> wellformed S.
-Proof with auto. intros B S. apply wellformed_inversion... apply (mkVar 0). Qed.
-Hint Resolve wellformed_inversion_send : wf.
-
-Lemma wellformed_inversion_recv : forall B S,
-  wellformed (recv B S) -> wellformed S.
-Proof with auto. intros B S. apply wellformed_inversion... apply (mkVar 0). Qed.
-Hint Resolve wellformed_inversion_recv : wf.
-
-Lemma wellformed_inversion_echoice : forall S1 S2,
-  wellformed (echoice S1 S2) -> wellformed S1 /\ wellformed S2.
-Proof with auto.
-  intros S1 S2. apply wellformed_inversion... apply (mkMsg 0). apply (mkVar 0).
-Qed.
-
-Lemma wellformed_inversion_echoice1 : forall S1 S2,
-  wellformed (echoice S1 S2) -> wellformed S1.
-Proof with auto. intros S1 S2. apply wellformed_inversion_echoice... Qed.
-Hint Resolve wellformed_inversion_echoice1 : wf.
-
-Lemma wellformed_inversion_echoice2 : forall S1 S2,
-  wellformed (echoice S1 S2) -> wellformed S2.
-Proof with auto. intros S1 S2. apply wellformed_inversion_echoice... Qed.
-Hint Resolve wellformed_inversion_echoice2 : wf.
-
-Lemma wellformed_inversion_ichoice : forall S1 S2,
-  wellformed (ichoice S1 S2) -> wellformed S1 /\ wellformed S2.
-Proof with auto.
-  intros S1 S2. apply wellformed_inversion... apply (mkMsg 0). apply (mkVar 0).
-Qed.
-
-Lemma wellformed_inversion_ichoice1 : forall S1 S2,
-  wellformed (ichoice S1 S2) -> wellformed S1.
-Proof with auto. intros S1 S2. apply wellformed_inversion_ichoice... Qed.
-Hint Resolve wellformed_inversion_ichoice1 : wf.
-
-Lemma wellformed_inversion_ichoice2 : forall S1 S2,
-  wellformed (ichoice S1 S2) -> wellformed S2.
-Proof with auto. intros S1 S2. apply wellformed_inversion_ichoice... Qed.
-Hint Resolve wellformed_inversion_ichoice2 : wf.
-
-Lemma wellformed_inversion_mu : forall X S,
-  wellformed (mu X S) -> wellformed (subst X (mu X S) S).
-Proof with auto. intros X S. apply wellformed_inversion... apply (mkMsg 0). Qed.
-Hint Resolve wellformed_inversion_mu : wf.
+Hint Resolve subst_preserves_wellformedness : wf.
 
 
 Lemma ok_mu_shape :
@@ -239,3 +179,73 @@ Lemma ok_mu_shape :
   shape S = ichoiceS \/
   shape S = muS.
 Proof. introv Hok. inverts2 Hok; iauto. Qed.
+
+
+(*****************************************************************************)
+(* Automation *)
+
+
+Lemma ok_var_absurd :
+  forall X XS,
+  ok XS (var X) -> False.
+Proof. introv H. inverts H. Qed.
+
+Hint Extern 1 =>
+  match goal with
+  | H : ok _ (var _) |- _ =>
+      solve [exfalso; apply ok_var_absurd in H; assumption]
+  end
+: wf.
+
+Hint Extern 4 (checked _ ?S) =>
+  match goal with
+  | H : ok _ (send _ S) |- _ => inverts H
+  | H : ok _ (recv _ S) |- _ => inverts H
+  | H : ok _ (echoice S _) |- _ => inverts H
+  | H : ok _ (echoice _ S) |- _ => inverts H
+  | H : ok _ (ichoice S _) |- _ => inverts H
+  | H : ok _ (ichoice _ S) |- _ => inverts H
+  end
+: wf.
+
+
+Hint Extern 4 (ok _ ?S) =>
+  match goal with
+  | H : checked _ S |- _ => inverts H
+  end
+: wf.
+
+
+Lemma wellformed_inv :
+  (forall B S, wellformed (send B S) -> wellformed S) /\
+  (forall B S, wellformed (recv B S) -> wellformed S) /\
+  (forall S1 S2, wellformed (echoice S1 S2) -> wellformed S1 /\ wellformed S2) /\
+  (forall S1 S2, wellformed (ichoice S1 S2) -> wellformed S1 /\ wellformed S2) /\
+  (forall X S, wellformed (mu X S) -> ok (env_add X env_empty) S).
+Proof.
+  Hint Extern 1 =>
+    match goal with
+    | H : env_mem _ env_empty |- _ =>
+        solve [exfalso; apply env_mem_empty in H; assumption]
+    end
+  .
+  splits; introv H; try solve [inverts2 H; auto with wf].
+Qed.
+
+Hint Extern 4 (wellformed ?S) =>
+  let inv H := apply wellformed_inv in H in
+  match goal with
+  | H : wellformed (send _ S) |- _ => inv H
+  | H : wellformed (recv _ S) |- _ => inv H
+  | H : wellformed (echoice S _) |- _ => inv H
+  | H : wellformed (echoice _ S) |- _ => inv H
+  | H : wellformed (ichoice S _) |- _ => inv H
+  | H : wellformed (ichoice _ S) |- _ => inv H
+  end
+: wf.
+
+Hint Extern 4 (ok _ ?S) =>
+  match goal with
+  | H : wellformed (mu _ S) |- _ => apply wellformed_inv in H
+  end
+: wf.

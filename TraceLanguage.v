@@ -331,39 +331,6 @@ Lemma tl_wf_eta_irrelevant :
   (exists eta, tl eta S L) ->
   tl eta S L.
 Proof with (eauto with tl wf).
-  apply R_tl_wf_eta_irrelevant_lemma. apply tl_coind. intros eta S L H.
-  inversion_clear H. destruct S.
-    inversion_clear H1. inversion_clear H. inversion_clear H1. constructor.
-
-    apply wellformed_inversion_send in H0. inversion_clear H1.
-    inversion_clear H. inversion_clear H1...
-
-    apply wellformed_inversion_recv in H0. inversion_clear H1.
-    inversion_clear H. inversion_clear H1...
-
-    inversion_clear H1. inversion_clear H. inversion_clear H1.
-    apply wellformed_inversion_echoice in H0. destruct H0. constructor;
-    constructor...
-
-    inversion_clear H1. inversion_clear H. inversion_clear H1.
-    apply wellformed_inversion_ichoice in H0. destruct H0. constructor;
-    constructor...
-
-    inversion_clear H1. inversion_clear H. inversion_clear H1.
-    constructor. constructor 2 with (X := v).
-      apply wellformed_inversion_mu in H0. intros T HwfT.
-      apply subst_preserves_wellformedness...
-
-    inversion H0.
-
-  (*
-  destruct S.
-    inversion_clear H1. inversion_clear H. inversion_clear H1.
-    inversion_clear H. inversion_clear H1. constructor.
-
-    inversion_clear H1. inversion_clear H. inversion_clear H1. inversion_clear
-    H. inversion_clear H1. constructor. constructor 2 with (X := X). simpl in H0.
-  *)
 Abort.
 
 Lemma subst_tl :
