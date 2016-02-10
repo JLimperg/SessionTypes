@@ -1,5 +1,4 @@
-Require Import Relations.
-Require Import Map Msg SessionTypes Var.
+Require Import Map Msg Rel SessionTypes Var.
 
 Create HintDb tl discriminated.
 

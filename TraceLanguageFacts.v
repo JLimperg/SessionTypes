@@ -1,4 +1,3 @@
-Require Import Relations.
 Require Import Map Rel SessionTypes Substitution TraceLanguage Var Wellformed.
 
 Inductive R_eq_tl_reflexive : relation Tl :=

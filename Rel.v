@@ -1,7 +1,10 @@
-Require Import LibTactics Relations.Relation_Definitions
-  Relations.Relation_Operators.
+Require Import Tac.
+Require Export Relations.
 
 Create HintDb rel discriminated.
+Hint Unfold inclusion : rel.
+Hint Unfold symmetric : rel.
+Hint Unfold transitive : rel.
 
 Inductive clos_sym A (R : relation A) : relation A :=
 | clos_sym_intro : forall x y : A, R x y -> clos_sym A R y x
@@ -13,17 +16,14 @@ Lemma clos_sym_sym :
   forall A (R : relation A),
   inclusion A (clos_sym A R) R ->
   symmetric A R.
-Proof with (auto with rel).
-  unfold inclusion. unfold symmetric. intros A R Hinc. intros x y HRxy.
-  apply Hinc...
-Qed.
+Proof. auto with rel. Qed.
 
 Lemma clos_trans_trans :
   forall A (R : relation A),
   inclusion A (clos_trans A R) R ->
   transitive A R.
 Proof.
-  unfold inclusion. unfold transitive. introv Hinc. intros. eauto with rel.
+  unfold inclusion. unfold transitive. eauto with rel.
 Qed.
 
 Inductive clos_trans' {A} (R : relation A) : relation A :=
@@ -37,6 +37,4 @@ Lemma clos_trans'_trans :
   forall A R,
   inclusion A (clos_trans' R) R ->
   transitive A R.
-Proof.
-  unfold inclusion. unfold transitive. introv Hinc. intros. eauto with rel.
-Qed.
+Proof. eauto with rel. Qed.
