@@ -1,4 +1,5 @@
-Require Import Map Rel SessionTypes Substitution TraceLanguage Var Wellformed.
+Require Import Free FreeFacts Map Rel SessionTypes Substitution Tac
+  TraceLanguage Var Wellformed.
 
 Inductive R_eq_tl_reflexive : relation Tl :=
 | R_eq_tl_reflexive_intro : forall t, R_eq_tl_reflexive t t
@@ -11,6 +12,7 @@ Proof with (auto with tl).
     clear t. intros t t' H. inversion_clear H. clear t. rename t' into t.
     destruct t...
 Qed.
+Hint Resolve eq_tl_refl : tl.
 
 Lemma eq_tl_sym : symmetric Tl eq_tl.
 Proof with (auto with tl rel).
@@ -37,3 +39,71 @@ Add Relation Tl eq_tl
   symmetry proved by eq_tl_sym
   transitivity proved by eq_tl_trans
   as eq_tl'.
+
+
+Lemma tl_m_eq_tl_eta_override :
+  forall S eta X LX LX' L,
+  eq_tl LX LX' ->
+  tl (eta_override eta X LX) S L ->
+  tl (eta_override eta X LX') S L.
+Proof.
+  induction S; introv Heq H; inverts2 H; eauto with tl;
+    do 2 constructor.
+  - destruct (eq_var_dec v X).
+    + rewrite eta_override_overwrite in *; auto.
+    + rewrite eta_override_exchange in *; eauto.
+  - unfold override in *. destruct (eq_var_dec v X).
+    + symmetry in Heq. transitivity LX; auto.
+    + auto with tl.
+Qed.
+
+
+Lemma tl_m_eq_tl :
+  forall S eta L L',
+  eq_tl L L' ->
+  tl eta S L ->
+  tl eta S L'.
+Proof.
+  induction S; introv Heq H; inverts2 H; try solve
+    [inverts2 Heq; eauto with tl];
+    do 2 constructor.
+  - apply IHS with (L := L); eauto using tl_m_eq_tl_eta_override.
+  - transitivity L; auto.
+Qed.
+
+
+(* TODO beautify *)
+Lemma tl_eta_irrelevant_Free :
+  forall S L eta eta',
+  (forall X, Free X S -> eq_tl (eta X) (eta' X)) ->
+  tl eta S L ->
+  tl eta' S L.
+Proof.
+  induction S; introv Hfree H; inverts2 H; eauto 6 with free tl.
+  - do 2 constructor.
+    + apply IHS1 with (eta := eta); auto with free.
+    + apply IHS2 with (eta := eta); auto with free.
+  - do 2 constructor.
+    + apply IHS1 with (eta := eta); auto with free.
+    + apply IHS2 with (eta := eta); auto with free.
+  - do 2 constructor. apply IHS with (eta := eta_override eta v L); [|auto].
+    + introv Hfree'. unfold override in *. destruct (eq_var_dec X v).
+      * reflexivity.
+      * auto with free.
+  - do 2 constructor. specialize Hfree with (X := v). transitivity (eta v).
+    + symmetry. auto with free.
+    + auto.
+Qed.
+
+
+Lemma tl_eta_irrelevant :
+  forall S L eta eta',
+  wellformed S ->
+  tl eta S L ->
+  tl eta' S L.
+Proof.
+  introv Hwf H. apply tl_eta_irrelevant_Free with (eta := eta); [|auto].
+  introv Hfree. exfalso.
+  assert (~ Free X S) by eauto using ok_free with env wf.
+  auto.
+Qed.
