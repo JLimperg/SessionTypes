@@ -1,32 +1,46 @@
-Require Export FunctionalExtensionality Var.
+Require Export FunctionalExtensionality Tac Var.
 
-Definition override {a b : Type} (beq : a -> a -> bool) (f : a -> b) (y : a) (y' : b) :=
-  fun x => if beq x y then y' else f x.
+Definition override
+  {A B}
+  (eq_dec : forall x y, {x = y} + {x <> y})
+  (f : A -> B) (y : A) (y' : B) : A -> B :=
+
+  fun x => if eq_dec x y then y' else f x.
 Hint Unfold override : tl.
 
-Notation eta_override := (override beq_var).
+Notation eta_override := (override eq_var_dec).
+
 
 Lemma override_exchange :
-  forall A B beq f (y z : A) (y' z' : B),
-  (forall a b : A, a = b <-> beq a b = true) ->
-  beq y z = false ->
-  override beq (override beq f z z') y y' =
-  override beq (override beq f y y') z z'.
-Proof with auto.
-  intros A B beq f y y' z z' Hbeq Hyneqz. unfold not in Hyneqz. unfold override.
-  apply functional_extensionality. intros x.
-  destruct (beq x y) eqn:Hxy.
-    apply Hbeq in Hxy. rewrite Hxy. rewrite Hyneqz...
-    destruct (beq x y')...
+  forall A B eq_dec f (y z : A) (y' z' : B),
+  y <> z ->
+  override eq_dec (override eq_dec f z z') y y' =
+  override eq_dec (override eq_dec f y y') z z'.
+Proof.
+  introv Hneq. compute. extensionality x.
+  destruct (eq_dec x y) as [Hxy | Hxy]; destruct (eq_dec x z) as [Hxz | Hxz];
+    congruence.
 Qed.
 
+Lemma eta_override_exchange :
+  forall B (f : Var -> B) (y z : Var) (y' z' : B),
+  y <> z ->
+  eta_override (eta_override f z z') y y' =
+  eta_override (eta_override f y y') z z'.
+Proof. introv H. apply override_exchange. auto. Qed.
+
+
 Lemma override_overwrite :
-  forall A B beq f (y z : A) (y' z' : B),
-  (forall a b : A, a = b <-> beq a b = true) ->
-  beq y z = true ->
-  override beq (override beq f z z') y y' = override beq f y y'.
-Proof with auto.
-  intros A B beq f y z y' z' Hbeq Hyeqz. unfold override.
-  apply functional_extensionality. intros x. destruct (beq x y) eqn:Hxy...
-    apply Hbeq in Hyeqz. rewrite <- Hyeqz. rewrite Hxy...
+  forall A B eq_dec f (y z : A) (y' z' : B),
+  y = z ->
+  override eq_dec (override eq_dec f z z') y y' = override eq_dec f y y'.
+Proof.
+  intros. subst. compute. extensionality x.
+  destruct (eq_dec x z) as [Hxz | Hxz]; auto.
 Qed.
+
+Lemma eta_override_overwrite :
+  forall B (f : Var -> B) (y z : Var) (y' z' : B),
+  y = z ->
+  eta_override (eta_override f z z') y y' = eta_override f y y'.
+Proof. introv H. apply override_overwrite. auto. Qed.
