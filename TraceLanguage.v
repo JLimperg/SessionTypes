@@ -1,4 +1,4 @@
-Require Import Map Msg Rel SessionTypes Var.
+Require Import Map Msg Rel SessionTypes Tac Var.
 
 Create HintDb tl discriminated.
 
@@ -101,8 +101,9 @@ Inductive tl_gen tl : (Var -> Tl) -> Sty -> Tl -> Prop :=
     tl (eta_override eta X L) S L ->
     tl_gen tl eta (mu X S) L
 | tl_gen_var :
-    forall eta X,
-    tl_gen tl eta (var X) (eta X)
+    forall eta X L,
+    eq_tl (eta X) L ->
+    tl_gen tl eta (var X) L
 .
 Hint Constructors tl_gen : tl.
 
@@ -114,34 +115,32 @@ Hint Constructors tl : tl.
 Lemma tl_coind : forall R,
   (forall eta S L, R eta S L -> tl_gen R eta S L) ->
   (forall eta S L, R eta S L -> tl eta S L).
-Proof with eauto.
-  cofix CIH. intros R H eta S L HR. apply H in HR.
-  inversion HR; subst; constructor; constructor; eapply CIH...
+Proof.
+  cofix CIH. introv H HR. apply H in HR. inverts1 HR; eauto with tl.
 Qed.
 
 Lemma tl_coind_ext_aux : forall (R R' : (Var -> Tl) -> Sty -> Tl -> Prop),
   (forall eta S L, R' eta S L -> tl_gen R' eta S L) ->
   (forall eta S L, R eta S L -> tl_gen (fun eta S L => R eta S L \/ R' eta S L) eta S L) ->
   (forall eta S L, R eta S L \/ R' eta S L -> tl eta S L).
-Proof with eauto.
-  cofix CIH. intros R R' HR' Hor eta S L HR.
-  inversion HR.
-    apply Hor in H. inversion_clear H; constructor; constructor; eapply CIH...
-    eapply tl_coind...
+Proof.
+  cofix CIH. introv HR' Hor HR. decompose_or_auto.
+  - apply Hor in HR. inverts HR; eauto with tl.
+  - eauto using tl_coind with tl.
 Qed.
 
 Lemma tl_coind_ext : forall (R R' : (Var -> Tl) -> Sty -> Tl -> Prop),
   (forall eta S L, R' eta S L -> tl_gen R' eta S L) ->
   (forall eta S L, R eta S L -> tl_gen (fun eta S L => R eta S L \/ R' eta S L) eta S L) ->
   (forall eta S L, R eta S L -> tl eta S L).
-Proof with eauto. intros. eapply tl_coind_ext_aux... Qed.
+Proof. intros. eauto using tl_coind_ext_aux. Qed.
 
 Lemma tl_expansion_1 : forall (R R' : (Var -> Tl) -> Sty -> Tl -> Prop) eta S L,
   tl_gen R eta S L ->
   tl_gen (fun eta S L => R eta S L \/ R' eta S L) eta S L.
-Proof. intros R R' eta S L HR. inversion_clear HR; auto with tl. Qed.
+Proof. introv HR. inverts HR; auto with tl. Qed.
 
 Lemma tl_expansion_2 : forall (R R' : (Var -> Tl) -> Sty -> Tl -> Prop) eta S L,
   tl_gen R' eta S L ->
   tl_gen (fun eta S L => R eta S L \/ R' eta S L) eta S L.
-Proof. intros R R' eta S L HR. inversion_clear HR; auto with tl. Qed.
+Proof. introv HR. inverts HR; auto with tl. Qed.
