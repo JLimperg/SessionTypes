@@ -1,7 +1,7 @@
 (* TODO This file could probably do with a little more structure, consistent
    naming and such. *)
 
-Require Import List1 MSetList MSetProperties Program.Basics Tac Var Vars.
+Require Import MSetList MSetProperties Program.Basics Tac Var.
 
 Module S := MSetList.Make VarOrder.
 Module SF := MSetProperties.WPropertiesOn VarOrder S.
@@ -47,30 +47,6 @@ Lemma env_union_list_neutral :
   forall xs,
   env_union_list xs nil = xs.
 Proof. auto. Qed.
-
-Definition env_union_vars (xs : Env) (ys : Vars) : Env :=
-  fold_left1 (fun x y => env_add y x) ys xs.
-
-Instance env_union_vars_m_subset :
-  Proper (env_subset ==> eq ==> env_subset) env_union_vars.
-Proof.
-  unfold Proper. unfold respectful. introv Hsub Heq. subst.
-  rename y0 into xs. gen x y. induction xs using list1_ind'; introv Hsub.
-    unfold env_union_vars. simpl. rewrite Hsub. reflexivity.
-
-    unfold env_union_vars in *. unfold cons1. destruct xs as [xs HxsNE].
-    simpl in *. apply IHxs. rewrite Hsub. reflexivity.
-Qed.
-
-Instance env_union_vars_m_env_eq :
-  Proper (env_eq ==> eq ==> env_eq) env_union_vars.
-Proof.
-  unfold Proper. unfold respectful. intros xs ys Hxsys xs' ys' Hxs'ys'.
-  subst. unfold env_union_vars. gen ys xs. destruct ys' as [ys' Hys'nonempty].
-
-  unfold fold_left1. simpl. clear Hys'nonempty. induction ys'; auto.
-  introv Hxsys. simpl in *. apply IHys'. rewrite Hxsys. reflexivity.
-Qed.
 
 Lemma env_add_twice :
   forall X XS,
@@ -179,18 +155,6 @@ Definition env_subset_union2 :
   forall e e',
   env_subset e' (env_union e e')
   := SF.union_subset_2.
-
-Lemma env_union_vars_spec :
-  forall xs ys,
-  env_eq (env_union_vars xs ys) (env_union xs (list_to_env ys)).
-Proof.
-  unfold SF.of_list. unfold env_union_vars. unfold fold_left1. intros. gen xs.
-  induction ys using list1_ind'; intros.
-    simpl. rewrite env_add_union_singleton2. reflexivity.
-
-    destruct ys as [ys HysNE]. simpl in *. rewrite IHys.
-    rewrite <- env_add_union1. rewrite env_add_union2. reflexivity.
-Qed.
 
 Lemma env_union_list_spec :
   forall xs ys,
