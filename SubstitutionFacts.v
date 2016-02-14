@@ -286,6 +286,34 @@ Proof.
 Qed.
 
 
+Lemma cs_preserves_not_sequiv :
+  forall S S' csS csS' XS XS',
+  ok XS S ->
+  ok XS' S' ->
+  cs S csS ->
+  cs S' csS' ->
+  ~ sequiv S S' ->
+  ~ sequiv csS csS'.
+Proof.
+  introv Hok Hok' Hcs Hcs' H contra. apply H. eapply uncs_preserves_sequiv;
+    eauto.
+Qed.
+
+
+Lemma uncs_preserves_not_sequiv :
+  forall S S' csS csS' XS XS',
+  ok XS S ->
+  ok XS' S' ->
+  cs S csS ->
+  cs S' csS' ->
+  ~ sequiv csS csS' ->
+  ~ sequiv S S'.
+Proof.
+  introv Hok Hok' Hcs Hcs' H contra. apply H.
+  eapply cs_preserves_sequiv with (S := S); eauto.
+Qed.
+
+
 Lemma cs_preserves_wellformedness :
   forall S csS,
   cs S csS ->
