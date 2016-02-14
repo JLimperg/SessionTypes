@@ -221,40 +221,40 @@ Qed.
 
 
 Lemma uncs_preserves_sequiv_l :
-  forall S S' csS csS' XS,
+  forall S S' csS XS,
   ok XS S ->
   cs S csS ->
-  cs S' csS' ->
-  sequiv csS csS' ->
-  sequiv S csS'.
+  sequiv csS S' ->
+  sequiv S S'.
 Proof.
   induction S using (well_founded_ind lt_Sty_mu_prefix_wf);
-    introv Hok Hcs Hcs' Heq; inverts1 Hcs; auto.
-  - do 2 constructor. pose proof Hok. inverts Hok.
-    eapply H with
-      (y := subst X (mu X S0) S0)
-      (S':= S')
-      (csS := csS);
-      eauto with subst.
+    introv Hok Hcs Heq; inverts1 Hcs; eauto with subst.
 Qed.
 
 
-(* TODO Avoid duplication between this and uncs_preserves_sequiv_l. *)
 Lemma uncs_preserves_sequiv_r :
-  forall S S' csS csS' XS',
+  forall S S' csS' XS',
+  ok XS' S' ->
+  cs S' csS' ->
+  sequiv S csS' ->
+  sequiv S S'.
+Proof.
+  induction S' using (well_founded_ind lt_Sty_mu_prefix_wf);
+    introv Hok' Hcs' Heq; inverts1 Hcs'; eauto with subst.
+Qed.
+
+
+Lemma uncs_preserves_sequiv :
+  forall S S' csS csS' XS XS',
+  ok XS S ->
   ok XS' S' ->
   cs S csS ->
   cs S' csS' ->
   sequiv csS csS' ->
-  sequiv csS S'.
+  sequiv S S'.
 Proof.
-  induction S' using (well_founded_ind lt_Sty_mu_prefix_wf);
-    introv Hok' Hcs Hcs' Heq; inverts1 Hcs'; auto.
-  - do 2 constructor. pose proof Hok'. inverts Hok'.
-    eapply H with
-      (y := subst X (mu X S0) S0)
-      (csS' := csS');
-      eauto with subst.
+  intros. eapply uncs_preserves_sequiv_l; eauto.
+  eapply uncs_preserves_sequiv_r; eauto.
 Qed.
 
 
@@ -267,7 +267,7 @@ Lemma cs_preserves_sequiv_l :
   sequiv csS S'.
 Proof.
   intros. pose proof (cs_ex S') as HcsS'. edestruct HcsS'; eauto.
-  eapply uncs_preserves_sequiv_r with (S := S); eauto.
+  eapply uncs_preserves_sequiv_r with (S := csS); eauto.
   eapply cs_preserves_sequiv with (S := S) (S' := S'); eauto.
 Qed.
 
@@ -281,7 +281,7 @@ Lemma cs_preserves_sequiv_r :
   sequiv S csS'.
 Proof.
   intros. pose proof (cs_ex S) as HcsS. edestruct HcsS; eauto.
-  eapply uncs_preserves_sequiv_l with (S' := S'); eauto.
+  eapply uncs_preserves_sequiv_l with (S' := csS'); eauto.
   eapply cs_preserves_sequiv with (S := S) (S' := S'); eauto.
 Qed.
 
