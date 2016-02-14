@@ -55,3 +55,10 @@ Ltac norm_hyp_auto :=
 
 Hint Extern 0 => decompose_and_auto.
 Hint Extern 1 => decompose_ex_auto.
+
+
+Hint Extern 0 =>
+  match goal with
+  | H : False |- _ => contradiction
+  end
+.
