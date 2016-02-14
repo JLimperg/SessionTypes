@@ -1,6 +1,6 @@
 Require Import Arith.Wf_nat Relations.Relation_Operators
   Wellfounded.Lexicographic_Product.
-Require Import SessionTypes Substitution Tac Var Wellformed.
+Require Import SessionTypes Tac Var.
 
 (*****************************************************************************)
 (* Construction order *)
@@ -56,22 +56,6 @@ Hint Unfold ltof.
 
 Lemma lt_Sty_mu_prefix_wf : well_founded lt_Sty_mu_prefix.
 Proof. apply well_founded_ltof. Defined.
-
-
-Lemma lt_Sty_mu_prefix_subst :
-  forall S X R,
-  ok_some S ->
-  lt_Sty_mu_prefix (subst X R S) (mu X S).
-Proof.
-  intros S X R; induction S; introv Hok; try solve [constructor].
-    simpl. destruct (beq_var X v).
-      constructor.
-
-      decompose_ex Hok. inverts Hok. unfold lt_Sty_mu_prefix in *.
-      unfold ltof in *. simpl in *. apply Lt.lt_n_S. eauto.
-
-    inverts2 Hok.
-Qed.
 
 
 (*****************************************************************************)

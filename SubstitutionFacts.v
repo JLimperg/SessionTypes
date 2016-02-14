@@ -1,6 +1,8 @@
 Require Import Env Equivalence Free FreeFacts SessionTypes SessionTypesInd
   Shape ShapeFacts Substitution Tac Var Wellformed.
 
+Hint Resolve subst_preserves_wellformedness : subst.
+
 Lemma subst_preserves_shape :
   forall S X r,
   shape S <> varS ->
@@ -65,6 +67,44 @@ Proof.
 Qed.
 
 
+Lemma subst_ok_mu :
+  forall S X XS,
+  ok XS (mu X S) ->
+  ok XS (subst X (mu X S) S).
+Proof.
+  introv Hok. eapply subst_preserves_wellformedness; [|inverts Hok]; auto.
+Qed.
+Hint Resolve subst_ok_mu : subst.
+
+
+Lemma lt_Sty_mu_prefix_subst :
+  forall S X R,
+  ok_some S ->
+  lt_Sty_mu_prefix (subst X R S) (mu X S).
+Proof.
+  intros S X R; induction S; introv Hok; try solve [constructor].
+  - simpl. destruct (beq_var X v); [constructor|].
+      decompose_ex Hok. inverts Hok. unfold lt_Sty_mu_prefix in *.
+      unfold Wf_nat.ltof in *. simpl in *. apply Lt.lt_n_S. eauto.
+  - inverts2 Hok.
+Qed.
+
+
+Lemma lt_Sty_mu_prefix_subst_mu :
+  forall S XS X Y,
+  ok XS (mu Y S) ->
+  lt_Sty_mu_prefix (subst X (mu X S) S) (mu X S).
+Proof. introv H. apply lt_Sty_mu_prefix_subst. inverts H. eauto. Qed.
+
+Hint Extern 1 (lt_Sty_mu_prefix (subst ?X (mu ?X ?S) ?S) (mu ?X ?S)) =>
+  match goal with
+  | H : ok ?XS1 (mu ?Y1 S) |- _ =>
+      apply lt_Sty_mu_prefix_subst_mu with (XS := XS1) (Y := Y1);
+      assumption
+  end
+: subst.
+
+
 (* TODO beautify *)
 Lemma free_subst_inversion :
   forall S X Y R,
@@ -95,8 +135,7 @@ Proof.
   induction S using (well_founded_ind lt_Sty_mu_prefix_wf).
   introv Hok H1 H2; inverts H1; inverts H2; auto with subst.
     pose proof Hok. inverts1 Hok.
-    eapply H with (y := subst X (mu X S0) S0);
-      eauto using subst_preserves_wellformedness, lt_Sty_mu_prefix_subst.
+    eapply H with (y := subst X (mu X S0) S0); eauto with subst.
 Qed.
 
 
@@ -108,10 +147,7 @@ Lemma cs_ex :
 Proof.
   induction S using (well_founded_ind lt_Sty_mu_prefix_wf). destruct S;
     eauto with subst; introv Hok.
-  - assert (exists csS', cs (subst v (mu v S) S) csS').
-      pose proof Hok. inverts Hok.
-      eapply H;
-        eauto using subst_preserves_wellformedness, lt_Sty_mu_prefix_subst.
+  - assert (exists csS', cs (subst v (mu v S) S) csS') by (eauto with subst).
     eauto with subst.
 Qed.
 
@@ -129,7 +165,7 @@ Proof.
   induction S using (well_founded_ind lt_Sty_mu_prefix_wf); introv Hok Hcs;
     inverts Hcs; auto.
   - pose proof Hok. inverts1 Hok. eapply H with (y := subst X (mu X S0) S0);
-      eauto using subst_preserves_wellformedness, lt_Sty_mu_prefix_subst.
+      eauto with subst.
   - inverts Hok.
 Qed.
 
@@ -144,8 +180,18 @@ Proof.
   decompose_or_auto; discriminate.
 Qed.
 
+Hint Extern 1 =>
+  match goal with
+  | H : cs ?S1 (mu ?X1 ?S'1), H' : ok ?XS1 ?S1 |- _ =>
+      solve [
+        exfalso; apply cs_mu_absurd with
+          (S := S1) (XS := XS1) (X := X1) (S' := S'1);
+        assumption
+      ]
+  end
+: subst.
 
-(* TODO beautify. Perhaps use that sequiv is symmetric. *)
+
 Lemma cs_preserves_sequiv :
   forall S S' csS csS' XS XS',
   ok XS S ->
@@ -168,12 +214,8 @@ Proof.
   ).
   introv IH Hok Hok' Hcs Hcs' Heq. inverts2 Heq; inverts1 Hcs; inverts1 Hcs';
     auto; solve
-    [ pose proof Hok; inverts1 Hok; eapply IH with (T := (subst X (mu X S0) S0));
-        eauto using lt_Sty_mu_prefix_subst, subst_preserves_wellformedness
-        with subst
-    | pose proof Hok'; inverts Hok'; eapply IH with (T' := (subst X (mu X S'0) S'0));
-        eauto using lt_Sty_mu_prefix_subst, subst_preserves_wellformedness
-        with subst
+    [ eapply IH with (T := (subst X (mu X S0) S0)); eauto with subst
+    | eapply IH with (T' := (subst X (mu X S'0) S'0)); eauto with subst
     ].
 Qed.
 
@@ -193,7 +235,7 @@ Proof.
       (y := subst X (mu X S0) S0)
       (S':= S')
       (csS := csS);
-      eauto using lt_Sty_mu_prefix_subst, subst_preserves_wellformedness.
+      eauto with subst.
 Qed.
 
 
@@ -212,7 +254,7 @@ Proof.
     eapply H with
       (y := subst X (mu X S0) S0)
       (csS' := csS');
-      eauto using lt_Sty_mu_prefix_subst, subst_preserves_wellformedness.
+      eauto with subst.
 Qed.
 
 
@@ -253,6 +295,5 @@ Proof.
   induction S using (well_founded_ind lt_Sty_mu_prefix_wf);
     introv Hcs Hwf; inverts Hcs; auto.
   - pose proof Hwf. inverts Hwf. eapply H with (y := subst X (mu X S0) S0);
-      [eauto using lt_Sty_mu_prefix_subst|auto|].
-      apply subst_preserves_wellformedness; auto.
+      eauto with subst.
 Qed.
