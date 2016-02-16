@@ -1,4 +1,4 @@
-Require Import Msg Tac Var.
+Require Import Msg Tac TLC.LibLogic Var.
 
 Inductive Sty : Set :=
 | unit : Sty
@@ -28,3 +28,6 @@ Fixpoint beq_Sty (S T : Sty) : bool :=
   | _ => false
   end
 .
+
+Global Instance Sty_Inhab : Inhab Sty.
+Proof. constructor. exists unit. trivial. Qed.
