@@ -151,6 +151,15 @@ Proof.
     eauto with subst.
 Qed.
 
+Ltac cs_intro S csS HcsS :=
+  match goal with
+  | Hok : ok ?XS1 S |- _ =>
+      let tmp := fresh in
+      pose proof (cs_ex S XS1 Hok) as tmp;
+      destruct tmp as [csS HcsS]
+  end
+.
+
 
 Lemma cs_shape :
   forall S S' XS,
