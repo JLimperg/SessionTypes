@@ -1,4 +1,6 @@
-Makefile.coq
+Makefile
 *.vo
+*.vio
 *.d
 *.glob
+.*.aux

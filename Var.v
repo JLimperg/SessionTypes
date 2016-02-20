@@ -68,7 +68,7 @@ Proof. intros. destruct x; destruct y; unfold beq_var. apply beq_nat_sym. Qed.
 
 Module VarOrder <: OrderedType.
 
-  Module N := NPeano.Nat.
+  Module N := PeanoNat.Nat.
   Module NF := CompFacts N.
 
   Definition t := Var.
