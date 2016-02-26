@@ -1,5 +1,5 @@
-Require Import CompleteSubstitution Equivalence SessionTypes SessionTypesInd
-  Shape ShapeFacts Substitution Tac Wellformed.
+Require Import CompleteSubstitution Equivalence NonEquivalence
+  SessionTypes SessionTypesInd Shape ShapeFacts Substitution Tac Wellformed.
 
 Lemma cs_shape :
   forall S,
@@ -128,6 +128,45 @@ Lemma uncs_preserves_not_sequiv :
   ~ sequiv S S'.
 Proof.
   introv Hok Hok' H contra. apply H. eapply cs_preserves_sequiv; eauto.
+Qed.
+
+
+Lemma cs_preserves_nsequiv :
+  forall S S',
+  ok_some S ->
+  ok_some S' ->
+  nsequiv S S' ->
+  nsequiv (cs S) (cs S').
+Proof.
+  apply (Sty_ind_mu_prefix2 (fun S S' =>
+    ok_some S ->
+    ok_some S' ->
+    nsequiv S S' ->
+    nsequiv (cs S) (cs S')
+  )).
+  introv IH Hok Hok' Hneq. inverts Hneq; try cs_simpl;
+    eauto 10 with subst nsequiv.
+  - destruct S; destruct S'; cs_simpl; auto with nsequiv; false.
+Qed.
+
+
+Lemma uncs_preserves_nsequiv :
+  forall S S',
+  ok_some S ->
+  ok_some S' ->
+  nsequiv (cs S) (cs S') ->
+  nsequiv S S'.
+Proof.
+  apply (Sty_ind_mu_prefix2 (fun S S' =>
+    ok_some S ->
+    ok_some S' ->
+    nsequiv (cs S) (cs S') ->
+    nsequiv S S'
+  )).
+  introv IH Hok Hok' Hneq. destruct S; destruct S'; try solve
+    [ cs_simpl; auto
+    | constructor; apply IH; eauto with subst; cs_simpl; auto with nsequiv
+    ].
 Qed.
 
 
