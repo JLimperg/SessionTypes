@@ -43,12 +43,6 @@ Inductive nsequiv : Sty -> Sty -> Prop :=
     forall X S S',
     nsequiv S (subst X (mu X S') S') ->
     nsequiv S (mu X S')
-| nsequiv_var_l :
-    forall X S',
-    nsequiv (var X) S'
-| nsequiv_var_r :
-    forall X S,
-    nsequiv S (var X)
 | nsequiv_shape :
     forall S S',
     shape S  <> muS ->

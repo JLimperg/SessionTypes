@@ -1,6 +1,6 @@
-Require Import CompleteSubstitution CompleteSubstitutionFacts Equivalence
-  NonEquivalence SessionTypes SessionTypesInd Substitution SubstitutionFacts
-  Shape Symmetry Tac Msg Var Wellformed.
+Require Import CompleteSubstitution CompleteSubstitutionFacts Equivalence Free
+  FreeFacts NonEquivalence SessionTypes SessionTypesInd Substitution
+  SubstitutionFacts Shape Symmetry Tac Msg Var Wellformed.
 
 (* --------------------------------------------------------------------------*)
 (* Automation *)
@@ -88,40 +88,6 @@ Hint Extern 4 (ok ?XS' ?S') =>
 : nsequiv.
 
 
-Lemma nsequiv_checked_ok_l :
-  forall S S' XS,
-  checked XS S ->
-  ~ nsequiv S S' ->
-  ok XS S.
-Proof.
-  introv Hch Hneq. inverts Hch;auto; exfalso; auto with nsequiv.
-Qed.
-
-Hint Extern 4 (ok ?XS ?S) =>
-  match goal with
-  | Hch : checked XS S |- _ =>
-    refine (nsequiv_checked_ok_l _ _ _ Hch _)
-  end
-: nsequiv.
-
-
-Lemma nsequiv_checked_ok_r :
-  forall S S' XS',
-  checked XS' S' ->
-  ~ nsequiv S S' ->
-  ok XS' S'.
-Proof.
-  introv Hch' Hneq. inverts Hch'; auto; exfalso; auto with nsequiv.
-Qed.
-
-Hint Extern 4 (ok ?XS' ?S') =>
-  match goal with
-  | Hch' : checked XS' S' |- _ =>
-    refine (nsequiv_checked_ok_r _ _ _ Hch' _)
-  end
-: nsequiv.
-
-
 (* --------------------------------------------------------------------------*)
 (* nsequiv -> ~ sequiv *)
 
@@ -154,38 +120,32 @@ Qed.
 Inductive R_not_nsequiv_sequiv : Sty -> Sty -> Prop :=
 | R_not_nsequiv_sequiv_intro :
     forall S S',
-    ok_some S ->
-    ok_some S' ->
+    Closed S ->
+    Closed S' ->
     ~ nsequiv S S' ->
     R_not_nsequiv_sequiv S S'
 .
 Hint Constructors R_not_nsequiv_sequiv : nsequiv.
 
-Ltac not_nsequiv_sequiv'_finish Hok Hok' :=
-  inverts2 Hok; inverts2 Hok'; do 2 constructor; eauto 10 with nsequiv.
 
 Lemma not_nsequiv_sequiv' :
   forall S S',
   R_not_nsequiv_sequiv S S' ->
   sequiv_gen R_not_nsequiv_sequiv S S'.
 Proof.
-  introv H. inverts H as Hok Hok' H. destruct S; destruct S'; try solve
+  introv H. inverts H as Hcl Hcl' H. destruct S; destruct S'; try solve
     [ exfalso; apply H; constructor; intro; discriminate ];
-    eauto 10 with nsequiv subst.
-  - destruct (eq_Msg_dec m m0).
-    + subst. not_nsequiv_sequiv'_finish Hok Hok'.
-    + exfalso; auto with nsequiv.
-  - destruct (eq_Msg_dec m m0).
-    + subst. not_nsequiv_sequiv'_finish Hok Hok'.
-    + exfalso; auto with nsequiv.
-  - not_nsequiv_sequiv'_finish Hok Hok'.
-  - not_nsequiv_sequiv'_finish Hok Hok'.
+    try match goal with
+    | B : Msg, B' : Msg |- _ =>
+      destruct (eq_Msg_dec B B'); [subst | exfalso; auto with nsequiv]
+    end;
+    auto 8 with free nsequiv.
 Qed.
 
 Lemma not_nsequiv_sequiv :
   forall S S',
-  ok_some S ->
-  ok_some S' ->
+  Closed S ->
+  Closed S' ->
   ~ nsequiv S S' ->
   sequiv S S'.
 Proof.
