@@ -4,17 +4,17 @@ Create HintDb nsequiv discriminated.
 
 Inductive nsequiv : Sty -> Sty -> Prop :=
 | nsequiv_send_S :
-    forall B B' S S',
+    forall B S S',
     nsequiv S S' ->
-    nsequiv (send B S) (send B' S')
+    nsequiv (send B S) (send B S')
 | nsequiv_send_B :
     forall B B' S S',
     B <> B' ->
     nsequiv (send B S) (send B' S')
 | nsequiv_recv_S :
-    forall B B' S S',
+    forall B S S',
     nsequiv S S' ->
-    nsequiv (recv B S) (recv B' S')
+    nsequiv (recv B S) (recv B S')
 | nsequiv_recv_B :
     forall B B' S S',
     B <> B' ->
