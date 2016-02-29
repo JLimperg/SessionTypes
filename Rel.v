@@ -1,5 +1,6 @@
 Require Import Tac.
 Require Export Relations.
+Require LibRelation.
 
 Create HintDb rel discriminated.
 Hint Unfold inclusion : rel.
@@ -38,3 +39,34 @@ Lemma clos_trans'_trans :
   inclusion A (clos_trans' R) R ->
   transitive A R.
 Proof. eauto with rel. Qed.
+
+(* -------------------------------------------------------------------------- *)
+(* Conversion between LibRelation and Coq standard library *)
+
+Ltac solve_LibRelation_conversion :=
+  let H := fresh in
+  intros; split; introv H; red in H; red; eauto.
+
+Lemma reflexive_refl_iff {A} {R} :
+  reflexive A R <-> LibRelation.refl R.
+Proof. solve_LibRelation_conversion. Qed.
+
+Lemma refl_reflexive {A} {R} :
+  LibRelation.refl R -> reflexive A R.
+Proof. intros; apply reflexive_refl_iff; auto. Qed.
+
+Lemma symmetric_sym_iff {A} {R} :
+  symmetric A R <-> LibRelation.sym R.
+Proof. solve_LibRelation_conversion. Qed.
+
+Lemma sym_symmetric {A} {R} :
+  LibRelation.refl R -> reflexive A R.
+Proof. intros; apply reflexive_refl_iff; auto. Qed.
+
+Lemma transitive_trans_iff {A} {R} :
+  transitive A R <-> LibRelation.trans R.
+Proof. solve_LibRelation_conversion. Qed.
+
+Lemma trans_transitive {A} {R} :
+  LibRelation.trans R -> transitive A R.
+Proof. intros; apply transitive_trans_iff; auto. Qed.
