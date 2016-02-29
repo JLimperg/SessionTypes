@@ -37,9 +37,8 @@ Lemma subst_preserves_free :
 Proof.
   induction S; introv Hneq Hfree; simpl; auto with free; try solve
     [inverts1 Hfree; decompose_or Hfree; auto with free].
-    destruct (beq_var Y v) eqn:HYeqv; auto with free.
-      constructor; auto with free. inverts1 Hfree. auto.
-    inverts Hfree. rewrite beq_var_neq; auto with free.
+  - destruct (beq_var Y v) eqn:HYeqv; auto with free.
+  - inverts Hfree. rewrite beq_var_neq; auto with free.
 Qed.
 
 
@@ -65,6 +64,43 @@ Proof.
 
   introv H. rewrite subst_neutral in H; auto with free.
 Qed.
+
+
+(* TODO beautify *)
+Lemma free_subst_inversion :
+  forall S X Y R,
+  Free X (subst Y R S) ->
+  Free X R \/ (X <> Y /\ Free X S).
+Proof.
+  induction S; introv H; simpl in *.
+    auto with free.
+    inverts1 H. apply IHS in H; destruct H; intuition (auto with free).
+    inverts1 H. apply IHS in H; destruct H; intuition (auto with free).
+    inverts1 H. destruct H; [apply IHS1 in H | apply IHS2 in H]; destruct H; intuition (auto with free).
+    inverts1 H. destruct H; [apply IHS1 in H | apply IHS2 in H]; destruct H; intuition (auto with free).
+    destruct (beq_var Y v) eqn:HYeqv.
+      apply beq_var_true_iff in HYeqv. subst. inversion H. iauto.
+      inverts1 H. apply IHS in H. destruct H; intuition (auto with free).
+    destruct (beq_var Y v) eqn:HYeqv; [auto|].
+      inverts1 H. apply beq_var_false_iff in HYeqv. auto with free.
+Qed.
+
+
+Lemma Closed_shortcut_mu :
+  forall S X,
+  Closed (mu X S) ->
+  Closed (subst X (mu X S) S).
+Proof.
+  unfold Closed; introv H; intro Y; specialize H with Y; contradict H;
+  apply free_subst_inversion in H; auto with free.
+Qed.
+
+Hint Extern 2 (Closed (subst ?X (mu ?X ?S) ?S)) =>
+  match goal with
+  | H : Closed (mu X S) |- _ =>
+      apply Closed_shortcut_mu in H; assumption
+  end
+: free.
 
 
 Lemma subst_ok_mu :
@@ -103,23 +139,3 @@ Hint Extern 1 (lt_Sty_mu_prefix (subst ?X (mu ?X ?S) ?S) (mu ?X ?S)) =>
       assumption
   end
 : subst.
-
-
-(* TODO beautify *)
-Lemma free_subst_inversion :
-  forall S X Y R,
-  Free X (subst Y R S) ->
-  Free X R \/ (X <> Y /\ Free X S).
-Proof.
-  induction S; introv H; simpl in *.
-    auto with free.
-    inverts1 H. apply IHS in H; destruct H; intuition (auto with free).
-    inverts1 H. apply IHS in H; destruct H; intuition (auto with free).
-    inverts1 H. destruct H; [apply IHS1 in H | apply IHS2 in H]; destruct H; intuition (auto with free).
-    inverts1 H. destruct H; [apply IHS1 in H | apply IHS2 in H]; destruct H; intuition (auto with free).
-    destruct (beq_var Y v) eqn:HYeqv.
-      apply beq_var_true_iff in HYeqv. subst. inversion H. iauto.
-      inverts1 H. apply IHS in H. destruct H; intuition (auto with free).
-    destruct (beq_var Y v) eqn:HYeqv; [auto|].
-      inverts1 H. apply beq_var_false_iff in HYeqv. auto with free.
-Qed.

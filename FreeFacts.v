@@ -1,67 +1,63 @@
-Require Import Env Free SessionTypes Tac Var Wellformed.
+Require Import Env Free SessionTypes Substitution Tac Var Wellformed.
 
-Lemma free_inv_unit : forall (P : Prop) X, Free X unit -> P.
-Proof. introv H. inversion H. Qed.
+(* -------------------------------------------------------------------------- *)
+(* Absurdities *)
 
-Hint Extern 0 =>
+Lemma Free_unit_absurd : forall X, Free X unit -> False.
+Proof. introv H. inverts H. Qed.
+
+Hint Extern 1 =>
   match goal with
-  | H : Free ?Y unit |- _ =>
-      apply free_inv_unit with (X := Y); assumption
+  | H : Free _ unit |- _ =>
+      apply Free_unit_absurd in H; contradiction
   end
 : free.
 
 
-Lemma nonfree_unit : forall X, ~ Free X unit.
-Proof. auto with free. Qed.
-
-Hint Extern 0 (~ Free _ unit) =>
-  apply nonfree_unit
-: free.
-
-
-Lemma free_inv_mu : forall (P : Prop) X S, Free X (mu X S) -> P.
-Proof. introv H; inversion H; exfalso; auto. Qed.
-
-Hint Extern 0 =>
-  match goal with
-  | H : Free ?Y (mu ?Y ?T) |- _ =>
-      apply free_inv_mu with (X := Y) (S := T); assumption
-  end
-: free.
-
-
-Lemma free_inv_mu2 : forall X Y S, Free X (mu Y S) -> X <> Y.
+Lemma Free_mu_absurd : forall X S, Free X (mu X S) -> False.
 Proof. introv H; inverts H; auto. Qed.
 
-Hint Extern 0 (?X1 <> ?Y1) =>
+Hint Extern 1 =>
+  match goal with
+  | H : Free ?Y (mu ?Y _) |- _ =>
+      apply Free_mu_absurd in H; contradiction
+  end
+: free.
+
+
+Lemma Closed_var_absurd :
+  forall X,
+  Closed (var X) -> False.
+Proof. introv H. unfold Closed in H. specialize H with X. auto with free. Qed.
+
+Hint Extern 1 =>
+  match goal with
+  | H : Closed (var _) |- _ =>
+    apply Closed_var_absurd in H; contradiction
+  end
+: free.
+
+
+(* -------------------------------------------------------------------------- *)
+(* Inversion of Free *)
+
+
+Lemma Free_inv_mu : forall X Y S, Free X (mu Y S) -> X <> Y.
+Proof. introv H; inverts H; auto. Qed.
+
+Hint Extern 1 (?X1 <> ?Y1) =>
   match goal with
   | H : Free ?X1 (mu ?Y1 ?S1) |- _ =>
-      apply free_inv_mu2; assumption
+      apply Free_inv_mu in H; assumption
   end
 : free.
 
 
-Lemma nonfree_inv_mu : forall X S, ~ Free X (mu X S).
-Proof. auto with free. Qed.
-
-Hint Extern 0 (~ Free ?X (mu ?X _)) =>
-  apply nonfree_inv_mu
-: free.
-
-
-Lemma free_inv_var : forall X Y, Free X (var Y) -> X = Y.
+Lemma Free_inv_var : forall X Y, Free X (var Y) -> X = Y.
 Proof. introv H; inverts H; auto. Qed.
 
-Hint Extern 0 (?X1 = ?Y1) =>
-  solve [apply free_inv_var; assumption]
-: free.
-
-
-Lemma nonfree_inv_var : forall X Y, X <> Y -> ~ Free X (var Y).
-Proof. auto with free. Qed.
-
-Hint Extern 0 (~ Free ?X (var ?Y)) =>
-  solve [apply nonfree_inv_var; assumption]
+Hint Extern 1 (?X1 = ?Y1) =>
+  solve [apply Free_inv_var; assumption]
 : free.
 
 
@@ -81,7 +77,7 @@ Ltac free_inv_auto X S :=
 Hint Extern 4 (Free ?X ?S) => free_inv_auto X S.
 
 
-Hint Extern 3 (Free _ _) =>
+Hint Extern 2 (Free _ _) =>
   match goal with
   | H : Free _ _ \/ _ |- _ => decompose_or H
   | H : _ \/ Free _ _ |- _ => decompose_or H
@@ -103,6 +99,39 @@ Qed.
 Hint Extern 2 (~ Free _ _) => apply Nonfree_shortcut : free.
 
 
+(* -------------------------------------------------------------------------- *)
+(* Closed automation *)
+
+
+Lemma Closed_shortcut :
+  (forall S B, Closed (send B S) -> Closed S) /\
+  (forall S B, Closed (recv B S) -> Closed S) /\
+  (forall S1 S2, Closed (echoice S1 S2) -> Closed S1 /\ Closed S2) /\
+  (forall S1 S2, Closed (ichoice S1 S2) -> Closed S1 /\ Closed S2).
+Proof.
+  splits; introv H; unfold Closed in *; try split; intro Y; specialize H with Y;
+    contradict H; auto with free.
+Qed.
+
+Hint Extern 2 (Closed ?S) =>
+  let solve_using H :=
+    apply Closed_shortcut in H; try decompose_and H; assumption
+  in
+  match goal with
+  | H : Closed (send _ S) |- _ => solve_using H
+  | H : Closed (recv _ S) |- _ => solve_using H
+  | H : Closed (echoice S _) |- _ => solve_using H
+  | H : Closed (echoice _ S) |- _ => solve_using H
+  | H : Closed (ichoice S _) |- _ => solve_using H
+  | H : Closed (ichoice _ S) |- _ => solve_using H
+  end
+: free.
+
+
+(* -------------------------------------------------------------------------- *)
+(* Non-automation lemmas *)
+
+
 Lemma Free_dec : forall S X, {Free X S} + {~ Free X S}.
 Proof.
   intros S X. induction S;
@@ -113,7 +142,7 @@ Proof.
     );
     auto with free;
     destruct (eq_var_dec X v); subst; auto with free.
-Qed.
+Defined.
 
 
 Lemma ok_checked_free :
