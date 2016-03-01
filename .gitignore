@@ -4,3 +4,6 @@ Makefile
 *.d
 *.glob
 .*.aux
+paper/*.aux
+paper/*.log
+paper/*.pdf

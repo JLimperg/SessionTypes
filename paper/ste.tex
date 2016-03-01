@@ -1,0 +1,1891 @@
+% TODO Clean up contractivity issue. Possible solutions:
+% 1. Drop contractivity requirement; handle noncontractive types specially
+%    in transitivity proof.
+% 2. Thread contractivity assumption through all proofs that require it,
+%    notably transitivity.
+\documentclass{llncs}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+\usepackage{semantic}
+
+\newcommand*{\Msg}{\mathrm{Msg}}
+\newcommand*{\Var}{\mathrm{Var}}
+\newcommand*{\Sym}{\mathrm{Sym}}
+\newcommand*{\Refl}{\mathrm{Refl}}
+\newcommand*{\Trans}{\mathrm{Trans}}
+\newcommand*{\Ty}{\mathrm{Ty}}
+\newcommand*{\Sy}{\mathfrak{S}}
+\newcommand*{\lfp}{\mathrm{lfp}}
+\newcommand*{\gfp}{\mathrm{gfp}}
+\newcommand*{\cs}{\mathrm{cs}}
+\newcommand*{\sequiv}{\sim}
+\newcommand*{\union}{\cup}
+\newcommand*{\send}{\mathord{!}}
+\newcommand*{\recv}{\mathord{?}}
+\newcommand*{\echoice}{\oplus}
+\newcommand*{\ichoice}{\mathop{\&}}
+\newcommand*{\concat}{\cdot}
+\newcommand*{\wf}[1]{\text{$#1$ {\normalfont \rmfamily wellformed}}}
+\newcommand*{\contractive}[1]{\text{$#1$ {\normalfont \rmfamily contractive}}}
+\newcommand*{\envimpl}       [2]{#1 \vdash #2}
+\newcommand*{\envimplchecked}[2]{\envimpl{#1}{\text{$#2$ {\normalfont \rmfamily checked}}}}
+\newcommand*{\envimplok}     [2]{\envimpl{#1}{\text{$#2$ {\normalfont \rmfamily ok}}}}
+\renewcommand*{\|}{\;|\;}
+\renewcommand*{\epsilon}{\varepsilon}
+\newcommand*{\eqwith}[1]{\mathrel{\overset{\makebox[0pt]{\mbox{\normalfont\tiny\rmfamily #1}}}{=}}}
+
+\begin{document}
+\title{Trace Equivalence for Session Types}
+\author{Jannis Limperg}
+\institute{Freiburg University}
+\maketitle
+
+\begin{definition}[Session Types]
+  \label{def:session_types}
+  \begin{eqnarray*}
+    F_{\Ty}(\tau)
+      &:=&     \{1\} \\
+      &\union& \{\send B.S \| S \in \tau, B \in \Msg\} \\
+      &\union& \{\recv B.S \| S \in \tau, B \in \Msg\} \\
+      &\union& \{S_1 \echoice S_2 \| S_1, S_2 \in \tau\} \\
+      &\union& \{S_1 \ichoice S_2 \| S_1, S_2 \in \tau\} \\
+      &\union& \{\mu X.S \| X \in \Var, S \in \tau\} \\
+    \Ty &:=& \lfp(F_{\Ty}).
+  \end{eqnarray*}
+  where $\Msg$ is a base set of messages, $\Var$ is a base set of variable
+  names, and both are distinct from $\Ty$ and each other. Additionally,
+  $\{0, 1\} \cap \Msg = \emptyset$.
+
+  In the following, we use $B$ for messages and $X, Y, \dots$ for variables and
+  occasionally omit the explicit quantification.
+\end{definition}
+
+\begin{definition}[Contractivity]
+  \label{def:contractivity}
+  A session type $S$ is contractive iff no part of $S$ is of the form
+  \begin{equation*}
+    \mu X_1.\dots.\mu X_n.X_1.
+  \end{equation*}
+  The set of contractive session types is
+  \begin{equation*}
+    \Sy := \{S \| S \in \Ty, \contractive{S}\}.
+  \end{equation*}
+\end{definition}
+
+\begin{definition}[Trace Language]
+  \label{def:trace_language}
+  \begin{eqnarray}
+    \label{def:trace_language:1}
+    L_\eta(1)    &:=& \{ \epsilon \} \\
+    \label{def:trace_language:send}
+    L_\eta(\send B.S) &:=& \{ \send B \} \concat L_\eta(S) \quad \forall S \in \Sy \\
+    \label{def:trace_language:recv}
+    L_\eta(\recv B.S) &:=& \{ \recv B \} \concat L_\eta(S) \quad \forall S \in \Sy \\
+    \label{def:trace_language:echoice}
+    L_\eta(S_1 \echoice S_2)
+      &:=&   \{ \send 0 \} \concat L_\eta(S_1)
+      \union \{ \send 1 \} \concat L_\eta(S_2)
+      \quad \forall S_1, S_2 \in \Sy \\
+    \label{def:trace_language:ichoice}
+    L_\eta(S_1 \ichoice S_2)
+      &:=&   \{ \recv 0 \} \concat L_\eta(S_1)
+      \union \{ \recv 1 \} \concat L_\eta(S_2)
+      \quad \forall S_1, S_2 \in \Sy \\
+    \label{def:trace_language:mu}
+    L_\eta(\mu X.S) &:=& \gfp(LX \mapsto L_{\eta[X \mapsto LX]}(S))
+      \quad \forall S \in \Sy \\
+    \label{def:trace_language:var}
+    L_\eta(X) &:=& \eta(X)
+  \end{eqnarray}
+  where $\eta\colon \Var \to \Sigma^\infty$.
+\end{definition}
+
+\begin{definition}[Wellformed]
+  \label{def:wellformed}
+  Let the predicates $\mathrm{ok}$ and $\mathrm{checked}$ be defined
+  by the following inductive inference system:
+
+  \inference{}{\envimplok{XS}{1}}
+
+  \bigskip
+
+  \inference{\envimplchecked{XS}{S}}
+            {\envimplok{XS}{\send B.S}}
+
+  \bigskip
+
+  \inference{\envimplchecked{XS}{S}}
+            {\envimplok{XS}{\recv B.S}}
+
+  \bigskip
+
+  \inference{\envimplchecked{XS}{S_1} &
+             \envimplchecked{XS}{S_2}}
+            {\envimplok{XS}{S_1 \echoice S_2}}
+
+  \bigskip
+
+  \inference{\envimplchecked{XS}{S_1} &
+             \envimplchecked{XS}{S_2}}
+            {\envimplok{XS}{S_1 \ichoice S_2}}
+
+  \bigskip
+
+  \inference{\envimplok{XS, X}{S}}
+            {\envimplok{XS}{\mu X.S}}
+
+  \bigskip
+
+  \inference{}{\envimplchecked{XS, X}{X}}
+
+  \bigskip
+
+  \inference{\envimplok{XS}{S}}
+            {\envimplchecked{XS}{S}}
+
+  \begin{eqnarray*}
+    &&     \wf{S \in \Ty} \\
+    &\iff& \envimplok{0}{S}
+  \end{eqnarray*}
+\end{definition}
+
+\begin{theorem}[Structure of Trace Languages]
+  \label{th:struct_trace_langs}
+  \begin{eqnarray*}
+    &&         \forall S \in \Ty, \eta. \\
+    &&         \wf{S} \\
+    &\implies& L_\eta(S) = \{\epsilon\} \\
+    &\lor&     L_\eta(S) \subseteq \{\send B\} \concat \Sigma^\infty \\
+    &\lor&     L_\eta(S) \subseteq \{\recv B\} \concat \Sigma^\infty \\
+    &\lor&     L_\eta(S) \subseteq (\{\send 0\} \concat \Sigma^\infty) \union (\{\send 1\} \concat \Sigma^\infty) \\
+    &\lor&     L_\eta(S) \subseteq (\{\recv 0\} \concat \Sigma^\infty) \union (\{\recv 1\} \concat \Sigma^\infty)
+  \end{eqnarray*}
+\end{theorem}
+
+\begin{proof}
+  Simplified induction principle for derivation trees of well-formedness
+  (omitting assumptions not required for the following proof):
+
+  \begin{eqnarray*}
+    &&      \forall P. \\
+    &&      P(1) \\
+    &\land& (\forall S.\, P(S) \implies P(\send B.S)) \\
+    &\land& (\forall S.\, P(S) \implies P(\recv B.S)) \\
+    &\land& (\forall S_1, S_2.\, P(S_1) \land P(S_2) \implies P(S_1 \echoice S_2)) \\
+    &\land& (\forall S_1, S_2.\, P(S_1) \land P(S_2) \implies P(S_1 \ichoice   S_2)) \\
+    &\land& (\forall S, X.\, P(S) \implies P(\mu X.S)) \\
+    &\implies& (\forall S.\, P(S))
+  \end{eqnarray*}
+
+  Induction according to the above induction principle with
+  \begin{equation*}
+    P(S) := \forall \eta.\, L_\eta(S) = \{\epsilon\} \lor L_\eta(S) \subseteq
+            \{\send B\} \concat \Sigma^\infty \lor \dots
+  \end{equation*}
+
+  \begin{enumerate}
+    \item
+      \label{case:struct_trace_langs:1}
+      $P(1)$.
+
+      By def.,
+      \begin{equation*}
+        \forall \eta.\, L_\eta(1) = \{\epsilon\}.
+      \end{equation*}
+
+    \item
+      \label{case:struct_trace_langs:send}
+      $\forall S.\, P(S) \implies P(\send B.S)$.
+
+      Choose $S, \eta$. By def.,
+      \begin{equation*}
+        L_\eta(\send B.S) = \{\send B\} \concat L_\eta(S).
+      \end{equation*}
+      Due to $P(S)$,
+      \begin{equation*}
+        L_\eta(S) \subseteq \Sigma^\infty.
+      \end{equation*}
+      Thus
+      \begin{equation*}
+        L_\eta(\send B.S) \subseteq \{\send B\} \concat \Sigma^\infty.
+      \end{equation*}
+
+    \item
+      \label{case:struct_trace_langs:recv}
+      $\forall S.\, P(S) \implies P(\recv B.S)$.
+
+      Analogous to case \ref{case:struct_trace_langs:send}.
+
+    \item
+      \label{case:struct_trace_langs:echoice}
+      $\forall S_1, S_2.\, P(S_1) \land P(S_2) \implies P(S_1 \echoice S_2)$.
+
+      Choose $S_1, S_2, \eta$. By def.,
+      \begin{equation*}
+        L_\eta(S_1 \echoice S_2) = (\{\send 0\} \concat L_\eta(S_1)) \union (\{\send 1\} \concat L_\eta(S_2)).
+      \end{equation*}
+      Due to $P(S_1)$,
+      \begin{equation*}
+        L_\eta(S_1) \subseteq \Sigma^\infty.
+      \end{equation*}
+      Due to $P(S_2)$,
+      \begin{equation*}
+        L_\eta(S_2) \subseteq \Sigma^\infty.
+      \end{equation*}
+      Thus
+      \begin{equation*}
+        L_\eta(S_1 \echoice S_2) \subseteq (\{\send 0\} \concat \Sigma^\infty) \union (\{\send 1\} \concat \Sigma^\infty).
+      \end{equation*}
+
+    \item
+      \label{case:struct_trace_langs:ichoice}
+      $\forall S_1, S_2.\, P(S_1) \land P(S_2) \implies P(S_1 \ichoice S_2)$.
+
+      Analogous to case \ref{case:struct_trace_langs:echoice}.
+
+    \item
+      \label{case:struc_trace_langs:mu}
+      $\forall S, X.\, P(S) \implies P(\mu X.S)$.
+
+      Choose $S, X, \eta$.
+      Let
+      \begin{equation*}
+        L := \gfp(LX \mapsto L_{\eta[X \mapsto LX]}(S)).
+      \end{equation*}
+      Since $L$ is a fixed point,
+      \begin{equation}
+        \label{eq:struct_trace_langs:fp}
+        L = L_{\eta[X \mapsto L]}(S).
+      \end{equation}
+      By def.,
+      \begin{eqnarray*}
+        L_\eta(\mu X.S)
+          &=& L \\
+          &\eqwith{(\ref{eq:struct_trace_langs:fp})}& L_{\eta[X \mapsto L]}(S).
+      \end{eqnarray*}
+      Due to $P(S)$,
+      \begin{equation*}
+        L_\eta(\mu X.S) = \{\epsilon\} \lor L_\eta(\mu X.S) \subseteq \dots.
+      \end{equation*}
+  \end{enumerate}
+\end{proof}
+
+\begin{definition}[Session Type Equivalence]
+  \label{def:equivalence}
+  \begin{eqnarray}
+    F_\sequiv(\sequiv)
+    &:=&     \label{def:equivalence:mu1}
+             \{(\mu X.S, S') \| (S[X \mapsto \mu X.S], S') \in \sequiv\} \\
+    &\union& \label{def:equivalence:mu2}
+             \{(S, \mu X.S') \| (S, S'[X \mapsto \mu X.S']) \in \sequiv\} \\
+    &\union& \label{def:equivalence:ichoice}
+             \{(S_1 \ichoice S_2, S_1' \ichoice S_2') \| (S_1, S_1') \in \sequiv \land (S_2, S_2') \in \sequiv\} \\
+    &\union& \label{def:equivalence:echoice}
+             \{(S_1 \echoice S_2, S_1' \echoice S_2') \| (S_1, S_1') \in \sequiv \land (S_2, S_2') \in \sequiv\} \\
+    &\union& \label{def:equivalence:send}
+             \{(\send B.S, \send B.S') \| (S, S') \in \sequiv\} \\
+    &\union& \label{def:equivalence:recv}
+             \{(\recv B.S, \recv B.S') \| (S, S') \in \sequiv\} \\
+    &\union& \label{def:equivalence:1}
+             \{(1,1)\}
+  \end{eqnarray}
+
+  \begin{equation*}
+    \sequiv := \gfp(F_\sequiv).
+  \end{equation*}
+\end{definition}
+
+\begin{lemma}[Monotonicity of $F_\sequiv$]
+  \label{th:monotonicity}
+  \begin{equation*}
+    S \subseteq T \implies F_\sequiv(S) \subseteq F_\sequiv(T).
+  \end{equation*}
+\end{lemma}
+
+\begin{proof}
+  Trivial. %TODO
+\end{proof}
+
+\begin{definition}[Symmetric Closure]
+  \label{def:symmetric_closure}
+  \begin{equation*}
+    \Sym(R) := \{ (x_2, x_1) \| (x_1, x_2) \in R \}.
+  \end{equation*}
+\end{definition}
+
+\begin{theorem}[Symmetry of $\sequiv$]
+  \label{th:symmetry}
+  \begin{equation*}
+    \Sym(\sequiv) \subseteq \sequiv.
+  \end{equation*}
+\end{theorem}
+
+\begin{proof}
+  We will prove that
+  \begin{equation*}
+    \Sym(\sequiv) \subseteq F_\sequiv(\Sym(\sequiv)).
+  \end{equation*}
+  which, by the fixed-point theorem, implies that
+  \begin{equation*}
+    \Sym(\sequiv) \subseteq \sequiv.
+  \end{equation*}
+
+  Choose $(t, t') \in \Sym(\sequiv)$. By def.,
+  \begin{equation*}
+    (t', t) \in \sequiv.
+  \end{equation*}
+
+  Case analysis on the derivation of $(t', t) \in \sequiv$
+  (Def. \ref{def:equivalence}).
+
+  \begin{enumerate}
+    \item
+      \label{case:symmetry:mu1}
+      Derivation by Eq. \ref{def:equivalence:mu1}, i.e.
+      \begin{eqnarray*}
+        &&      (t', t) = (\mu X.S, S') \\
+        &\land& (S[X \mapsto \mu X.S], S') \in \sequiv
+      \end{eqnarray*}
+      Thus, by Def. \ref{def:symmetric_closure},
+      \begin{equation*}
+        (S', S[X \mapsto \mu X.S]) \in \Sym(\sequiv).
+      \end{equation*}
+      Thus, by Eq. \ref{def:equivalence:mu1},
+      \begin{equation*}
+        (t, t') = (S', \mu X.S, S') \in F_\sequiv(\Sym(\sequiv)).
+      \end{equation*}
+
+    \item
+      \label{case:symmetry:mu2}
+      Derivation by Eq. \ref{def:equivalence:mu2}. Analogous to case
+      \ref{case:symmetry:mu1}.
+
+    \item
+      \label{case:symmetry:ichoice}
+      Derivation by Eq. \ref{def:equivalence:ichoice}, i.e.
+      \begin{eqnarray*}
+        && (t', t) = (S_1' \ichoice S_2', S_1 \ichoice S_2) \\
+        &\land& (S_1', S_1) \in \sequiv \\
+        &\land& (S_2', S_2) \in \sequiv.
+      \end{eqnarray*}
+      Thus, by Def. \ref{def:symmetric_closure},
+      \begin{eqnarray*}
+        &&      (S_1, S_1') \in \Sym(\sequiv) \\
+        &\land& (S_2, S_2') \in \Sym(\sequiv).
+      \end{eqnarray*}
+      Thus, by Eq. \ref{def:equivalence:ichoice},
+      \begin{equation*}
+        (t, t') = (S_1 \ichoice S_2, S_1' \ichoice S_2') \in F_\sequiv(\Sym(\sequiv)).
+      \end{equation*}
+
+    \item
+      \label{case:symmetry:echoice}
+      Derivation by Eq. \ref{def:equivalence:echoice}. Analogous to case
+      \ref{case:symmetry:ichoice}.
+
+    \item
+      \label{case:symmetry:send}
+      Derivation by Eq. \ref{def:equivalence:send}, i.e.
+      \begin{eqnarray*}
+        &&      (t', t) = (\send B.S', \send B.S) \\
+        &\land& (S', S) \in \sequiv.
+      \end{eqnarray*}
+      Thus, by Def. \ref{def:symmetric_closure},
+      \begin{equation*}
+        (S, S') \in \Sym(\sequiv).
+      \end{equation*}
+      Thus, by Eq. \ref{def:equivalence:send},
+      \begin{equation*}
+        (t, t') = (\send B.S, \send B.S') \in F_\sequiv(\Sym(\sequiv)).
+      \end{equation*}
+
+    \item
+      \label{case:symmetry:recv}
+      Derivation by Eq. \ref{def:equivalence:recv}. Analogous to case
+      \ref{case:symmetry:send}.
+
+    \item
+      \label{case:symmetry:1}
+      Derivation by Eq. \ref{def:equivalence:1}, i.e.
+      \begin{equation*}
+        (t', t) = (1, 1).
+      \end{equation*}
+      By Eq. \ref{def:equivalence:1},
+      \begin{equation*}
+        (t, t') = (1, 1) \in F_\sequiv(\Sym(\sequiv)).
+      \end{equation*}
+  \end{enumerate}
+\end{proof}
+
+\begin{definition}[Reflexive Closure]
+  \label{def:reflexive_closure}
+  \begin{equation*}
+    \Refl(S) := \{ (x, x) \| x \in S \}.
+  \end{equation*}
+\end{definition}
+
+\begin{theorem}[Reflexivity of $\sequiv$]
+  \label{th:reflexivity}
+  \begin{equation*}
+    \Refl(\Ty) \subseteq \sequiv.
+  \end{equation*}
+\end{theorem}
+
+\begin{proof}
+  Let
+  \begin{equation*}
+    R := \Refl(\Ty) \union \{ (\mu X.S, S[X \mapsto \mu X.S]) \| S \in \Ty \}.
+  \end{equation*}
+  We will show that
+  \begin{equation*}
+    R \subseteq F_\sequiv(R)
+  \end{equation*}
+  which implies, by the fixed point theorem,
+  \begin{equation*}
+    \Refl(\Ty) \subseteq R \subseteq \sequiv.
+  \end{equation*}
+
+  Choose $t \in \Ty$. Case analysis on $t$.
+
+  \begin{enumerate}
+    \item
+      \label{case:reflexivity:1}
+      $t = 1$. By Eq. \ref{def:equivalence:1}, $(1,1) \in F_\sequiv(R)$.
+
+    \item
+      \label{case:reflexivity:send}
+      $t = \send B.S$.
+
+      By def.,
+      \begin{equation*}
+        (S, S) \in R.
+      \end{equation*}
+      Thus, by Eq. \ref{def:equivalence:send},
+      \begin{equation*}
+        (\send B.S, \send B.S) \in F_\sequiv(R).
+      \end{equation*}
+
+    \item
+      \label{case:reflexivity:recv}
+      $t = \recv B.S$.
+
+      Analogous to case \ref{case:reflexivity:send}.
+
+    \item
+      \label{case:reflexivity:echoice}
+      $t = S_1 \echoice S_2$.
+
+      By def.,
+      \begin{eqnarray*}
+        (S_1, S_1) &\in& R \\
+        (S_2, S_2) &\in& R.
+      \end{eqnarray*}
+      Thus, by Eq. \ref{def:equivalence:echoice},
+      \begin{equation*}
+        (S_1 \echoice S_2, S_1 \echoice S_2) \in F_\sequiv(R).
+      \end{equation*}
+
+    \item
+      \label{case:reflexivity:ichoice}
+      $t = S_1 \ichoice S_2$.
+
+      Analogous to case \ref{case:reflexivity:echoice}.
+
+    \item
+      \label{case:reflexivity:mu}
+      $t = \mu X.S$.
+
+      By def.,
+      \begin{equation*}
+        (\mu X.S, S[X \mapsto \mu X.S]) \in R.
+      \end{equation*}
+      Thus, by Eq. \ref{def:equivalence:mu2},
+      \begin{equation*}
+        (\mu X.S, \mu X.S) \in F_\sequiv(R).
+      \end{equation*}
+  \end{enumerate}
+\end{proof}
+
+\begin{definition}[Complete Substitution]
+  \label{def:complete_substitution}
+  \begin{eqnarray*}
+    \cs          &\colon& \Ty \to \Ty \\
+    \cs(\mu X.S) &:=&     \cs(S[X \mapsto \mu X.S]) \\
+    \cs(t)       &:=&     t \quad \nexists X, S.\, t = \mu X.S
+  \end{eqnarray*}
+\end{definition}
+
+\begin{lemma}[Substitution Preserves Shape]
+  \label{lemma:substitution_shape}
+  \begin{eqnarray*}
+    &&      \forall S, S_1, S_2, X, T.\, \\
+    &&      \exists S', S_1', S_2'. \\
+    &&      (\send B.S)[X \mapsto T] = \send B.S' \\
+    &\land& (\recv B.S)[X \mapsto T] = \recv B.S' \\
+    &\land& (S_1 \echoice S_2)[X \mapsto T] = S_1' \echoice S_2' \\
+    &\land& (S_1 \ichoice S_2)[X \mapsto T] = S_1' \ichoice S_2' \\
+    &\land& 1[X \mapsto T] = 1 \\
+    &\land& (Y \neq X \implies Y[X \mapsto T] = Y)
+  \end{eqnarray*}
+\end{lemma}
+
+\begin{proof}
+  By def. of subst.
+\end{proof}
+
+\begin{lemma}[Complete Substitution Preserves Shape]
+  \label{lemma:complete_substitution_shape}
+  \begin{eqnarray*}
+    &&         \forall t := \mu X_1.\dots.\mu X_n.S \in \Ty, B, T, T_1, T_2, X. \\
+    &&         S \neq X_1 \\
+    &\implies& (S = \send B.T \implies (\exists T'.\, \cs(t) = \send B.T')) \\
+    &\land&    (S = \recv B.T \implies (\exists T'.\, \cs(t) = \recv B.T')) \\
+    &\land&    (S = T_1 \echoice T_2 \implies (\exists T_1', T_2'.\, \cs(t) = T_1' \echoice T_2')) \\
+    &\land&    (S = T_1 \ichoice T_2 \implies (\exists T_1', T_2'.\, \cs(t) = T_1' \ichoice T_2')) \\
+    &\land&    (S = X \implies \cs(t) = X)
+  \end{eqnarray*}
+\end{lemma}
+
+\begin{proof}
+  Choose $t, B, T, T_1, T_2, X$. Induction over $n$:
+  \begin{enumerate}
+    \item $n = 0$, i.e. $t = S$, $\cs(t) = \cs(S)$.
+
+      By Def. \ref{def:complete_substitution},
+      \begin{enumerate}
+        \item $S = \send B.T \implies \cs(t) = S$.
+        \item $S = \recv B.T \implies \cs(t) = S$.
+        \item $S = T_1 \echoice T_2 \implies \cs(t) = S$.
+        \item $S = T_1 \ichoice T_2 \implies \cs(t) = S$.
+        \item $S = X \implies \cs(t) = S$.
+      \end{enumerate}
+
+    \item $n \to n + 1$, i.e. $t = \mu X_1.\dots.\mu X_{n+1}.S$.
+
+      By Def. \ref{def:complete_substitution},
+      \begin{equation*}
+        \cs(t) = \cs(\mu X_2.\dots.\mu X_{n+1}.(S[X_1 \mapsto t])).
+      \end{equation*}
+
+      For $S = \send B.T$, $S = \recv B.T$, $S = T_1 \echoice T_2$ and
+      $S = T_1 \ichoice T_2$, the goal follows directly from Lemma
+      \ref{lemma:substitution_shape} and the induction hypothesis.
+
+      For $S = X$: By assumption,
+      \begin{equation*}
+        X \neq X_1.
+      \end{equation*}
+      Thus, by Lemma \ref{lemma:substitution_shape},
+      \begin{equation*}
+        S[X_1 \mapsto t] = X[X_1 \mapsto t] = X.
+      \end{equation*}
+      Thus, the goal follows directly from the induction hypothesis.
+  \end{enumerate}
+\end{proof}
+
+\begin{lemma}[Variables in $\sequiv$]
+  \label{lemma:variables_equivalence}
+  \begin{eqnarray*}
+    &&     \forall X \in \Var.\, \nexists t \in \Sy. \\
+    &&     (X, t) \in \sequiv \\
+    &\lor& (t, X) \in \sequiv.
+  \end{eqnarray*}
+\end{lemma}
+
+\begin{proof}
+  Choose $X$.
+
+  \begin{enumerate}
+    \item
+      \label{case:variables_equivalence:1}
+      $\nexists t \in \Sy.\, (X, t) \in \sequiv$.
+
+      For contradiction, choose $t \in \Sy$ such that
+      \begin{equation*}
+        (X, t) \in \sequiv.
+      \end{equation*}
+      By Lemma \ref{lemma:inversion_longest_muprefixes:one-sided},
+      \begin{equation*}
+        (X, \cs(t)) \in \sequiv.
+      \end{equation*}
+      By Lemma \ref{lemma:complete_substitution_shape},
+      \begin{eqnarray*}
+        &&     \exists B, T, T_1, T_2, X. \\
+        &&     \cs(t) = \send B.T \\
+        &\lor& \cs(t) = \recv B.T \\
+        &\lor& \cs(t) = T_1 \echoice T_2 \\
+        &\lor& \cs(t) = T_1 \ichoice T_2 \\
+        &\lor& \cs(t) = 1 \\
+        &\lor& \cs(t) = X
+      \end{eqnarray*}
+      Thus, inversion of Def. \ref{def:equivalence} leads to a contradiction.
+
+    \item
+      \label{case:variables_equivalence:2}
+      $\nexists t \in \Sy.\, (t, X) \in \sequiv$.
+
+      By Theorem \ref{th:symmetry}, $(t, X) \in \sequiv$ would imply
+      $(X, t) \in \sequiv$. By case \ref{case:variables_equivalence:1}, this
+      leads to a contradiction.
+  \end{enumerate}
+\end{proof}
+
+\begin{lemma}[Inversion of Longest $\mu$-Prefixes]
+  \label{lemma:inversion_longest_muprefixes}
+  \begin{eqnarray*}
+    && \forall t, t' \in \Ty. \\
+    && (t, t') \in \sequiv \\
+    &\implies& (\cs(t), \cs(t')) \in \sequiv
+  \end{eqnarray*}
+\end{lemma}
+
+\begin{proof}
+  Choose
+  \begin{eqnarray*}
+    t  &:=& \mu X_1.\dots.\mu X_n.S \\
+    t' &:=& \mu Y_1.\dots.\mu Y_m.T
+  \end{eqnarray*}
+  with $n \geq 0$, $m \geq 0$.
+
+  Induction over $n + m$:
+  \begin{enumerate}
+    \item $n + m = 0$, i.e. $n = m = 0$. By Def. \ref{def:complete_substitution},
+      $\cs(t) = t$ and $\cs(t') = t'$, thus by assumption
+      $(\cs(t), \cs(t')) \in \sequiv$.
+
+    \item $n + m \to n + m + 1$.
+
+      Induction hypothesis:
+      \begin{eqnarray*}
+        && \forall t = \mu X_1.\dots.\mu X_{n'}.S, t' =\mu Y_1.\dots.\mu Y_{m'}.T. \\
+        && n' + m' < n + m \\
+        &\implies& (t, t') \in \sequiv \\
+        &\implies& (\cs(t), \cs(t')) \in \sequiv.
+      \end{eqnarray*}
+
+      Case analysis on the derivation of $(t, t') \in \sequiv$:
+      \begin{enumerate}
+        \item
+          \label{case:muprefixes:mu1}
+          Derivation by Eq. \ref{def:equivalence:mu1}, thus
+          \begin{equation*}
+            ((\mu X_2.\dots\mu X_n.S)[X_1 \mapsto \mu X_1.\dots.\mu X_n.S], t') \in \sequiv.
+          \end{equation*}
+          Thus, by the definition of substitution,
+          \begin{equation*}
+            (\mu X_2.\dots\mu X_n.(S[X_1 \mapsto \mu X_1.\dots.\mu X_n.S]), t') \in \sequiv.
+          \end{equation*}
+          Thus, by the induction hypothesis and Def.
+          \ref{def:complete_substitution},
+          \begin{eqnarray*}
+            &&  (\cs(\mu X_2.\dots\mu X_n.(S[X_1 \mapsto \mu X_1.\dots.\mu X_n.S])), \cs(t')) \\
+            &=& (S[X_1 \mapsto \mu X_1.\dots.\mu X_n.S]\dots[X_n \mapsto \mu X_n.S], \cs(t')) \\
+            &=& (\cs(t), \cs(t')) \\
+            &\in& \sequiv.
+          \end{eqnarray*}
+
+        \item
+          \label{case:muprefixes:mu2}
+          Derivation by Eq. \ref{def:equivalence:mu2}: symmetric to case
+          \ref{case:muprefixes:mu1}.
+      \end{enumerate}
+  \end{enumerate}
+\end{proof}
+
+\begin{lemma}[One-Sided Inversion of Longest $\mu$-Prefix]
+  \label{lemma:inversion_longest_muprefixes:one-sided}
+  \begin{eqnarray*}
+    && \forall t, t' \in \Ty. \\
+    && (t, t') \in \sequiv \\
+    &\implies& (\cs(t), t') \in \sequiv \\
+    &\land&    (t, \cs(t')) \in \sequiv
+  \end{eqnarray*}
+\end{lemma}
+
+\begin{proof}
+  % TODO A more formal proof would require induction again.
+  Choose
+  \begin{eqnarray*}
+    t  &:=& \mu X_1.\dots.\mu X_n.S \\
+    t' &:=& \mu Y_1.\dots.\mu Y_m.T
+  \end{eqnarray*}
+  By Lemma \ref{lemma:inversion_longest_muprefixes},
+  \begin{equation*}
+    (\cs(t), \cs(t')) \in \sequiv.
+  \end{equation*}
+  By Eq. \ref{def:equivalence:mu1} applied $n$ times,
+  \begin{equation*}
+    (t, \cs(t')) \in \sequiv.
+  \end{equation*}
+  By Eq. \ref{def:equivalence:mu2} applied $m$ times,
+  \begin{equation*}
+    (\cs(t), t') \in \sequiv.
+  \end{equation*}
+\end{proof}
+
+\begin{lemma}[Structure of Complete Substitution]
+  \label{lemma:complete_substitution_shape:equivalence}
+  \begin{eqnarray*}
+    && \forall t \in \Sy.\, \exists T, T_1, T_2 \in \Sy. \\
+    && (\exists t'.\, (t, t') \in \sequiv) \\
+    &\implies& \cs(t) = 1 \\
+    &\lor&     \cs(t) = T_1 \echoice T_2 \\
+    &\lor&     \cs(t) = T_1 \ichoice T_2 \\
+    &\lor&     \cs(t) = \send B.T \\
+    &\lor&     \cs(t) = \recv B.T
+  \end{eqnarray*}
+\end{lemma}
+
+\begin{proof}
+  Choose $t \in \Sy$.
+  By Lemma \ref{lemma:complete_substitution_shape},
+  \begin{eqnarray*}
+    &&     \exists T, T_1, T_2, X. \\
+    &&     \cs(t) = \send B.T \\
+    &\lor& \cs(t) = \recv B.T \\
+    &\lor& \cs(t) = T_1 \echoice T_2 \\
+    &\lor& \cs(t) = T_1 \ichoice T_2 \\
+    &\lor& \cs(t) = X \\
+  \end{eqnarray*}
+
+  Assume for contradiction that $\cs(t) = X$. By assumption,
+  \begin{equation*}
+    \exists t'.\, (t, t') \in \sequiv.
+  \end{equation*}
+  Thus, by Lemma \ref{lemma:inversion_longest_muprefixes:one-sided},
+  \begin{equation*}
+    (X, t') = (\cs(t), t') \in \sequiv.
+  \end{equation*}
+  By Lemma \ref{lemma:variables_equivalence}, this leads to a contradiction
+\end{proof}
+
+
+\begin{definition}[Transitive Closure]
+  \label{def:transitive_closure}
+  \begin{equation*}
+    \Trans(R) := \{ (x_1, x_3) \| (x_1, x_2) \in R \land (x_2, x_3) \in R \}.
+  \end{equation*}
+\end{definition}
+
+\begin{theorem}[Transitivity of $\sequiv$]
+  \label{th:transitivity}
+  \begin{equation*}
+    \Trans(\sequiv) \subseteq \sequiv.
+  \end{equation*}
+\end{theorem}
+
+\begin{proof}
+  We will show that
+  \begin{equation*}
+    \Trans(\sequiv) \subseteq F_\sequiv(\Trans(\sequiv))
+  \end{equation*}
+  which, by the fixed-point theorem, implies
+  \begin{equation*}
+    \Trans(\sequiv) \subseteq \sequiv.
+  \end{equation*}
+
+  Choose $t_1, t_3$ with $(t_1, t_3) \in \Trans(\sequiv)$. 
+  By def.,
+  \begin{equation*}
+    \exists t_2.\, (t_1, t_2) \in \sequiv \land (t_2, t_3) \in \sequiv.
+  \end{equation*}
+
+  Case analysis on the derivation of $(t_1, t_2) \in \sequiv$:
+  \begin{enumerate}
+    \item
+      \label{case:transitivity:mu1}
+      $(t_1, t_2) = (\mu X.S, t_2)$; $(S[X \mapsto \mu X.S], t_2) \in \sequiv$.
+
+      By def.,
+      \begin{equation*}
+        (S[X \mapsto \mu X.S], t_3) \in \Trans(\sequiv).
+      \end{equation*}
+      Thus, by Eq. \ref{def:equivalence:mu1},
+      \begin{equation*}
+        (t_1, t_3) = (\mu X.S, t_3) \in F_\sequiv(\Trans(\sequiv)).
+      \end{equation*}
+
+    \item
+      \label{case:transitivity:mu2}
+      $(t_1, t_2) = (t_1, \mu X.S)$; $(t_1, S[X \mapsto \mu X.S]) \in \sequiv$.
+
+      By assumption,
+      \begin{eqnarray*}
+        &&      (t_1, \mu X.S) \in \sequiv \\
+        &\land& (\mu X.S, t_3) \in \sequiv
+      \end{eqnarray*}
+
+      By Lemma \ref{lemma:inversion_longest_muprefixes:one-sided},
+      \begin{eqnarray*}
+        && (t_1, \cs(t_2)) \in \sequiv \\
+        && (\cs(t_2), t_3) \in \sequiv
+      \end{eqnarray*}
+
+      Inversion on the derivation of $(t_1, \cs(t_2)) \in \sequiv$.
+      \begin{enumerate}
+        \item Derivation by Eq. \ref{def:equivalence:mu1}
+          ($t_1 = \mu Y.U$).
+          See case \ref{case:transitivity:mu1}.
+        \item Derivation by Eq. \ref{def:equivalence:mu2}
+          ($\cs(t_2) = \mu Y.U$).
+          Impossible due to Lemma \ref{lemma:complete_substitution_shape:equivalence}.
+        \item Derivation by Eq. \ref{def:equivalence:send}
+          ($t_1 = \send B.U$, $\cs(t_2) = \send B.V$).
+          See case \ref{case:transitivity:send}.
+        \item Derivation by Eq. \ref{def:equivalence:recv}
+          ($t_1 = \recv B.U$, $\cs(t_2) = \recv B.V$).
+          See case \ref{case:transitivity:recv}.
+        \item Derivation by Eq. \ref{def:equivalence:echoice}
+          ($t_1 = U \echoice U'$, $\cs(t_2) = V \echoice V'$).
+          See case \ref{case:transitivity:echoice}.
+        \item Derivation by Eq. \ref{def:equivalence:ichoice}
+          ($t_1 = U \ichoice U'$, $\cs(t_2) = V \ichoice V'$).
+          See case \ref{case:transitivity:ichoice}.
+        \item Derivation by Eq. \ref{def:equivalence:1}
+          ($t_1 = 1$, $\cs(t_2) = 1$).
+          See case \ref{case:transitivity:1}.
+      \end{enumerate}
+
+    \item
+      \label{case:transitivity:send}
+      $(t_1, t_2) = (\send B.S, \send B.S')$; $(S, S') \in \sequiv$.
+
+      Case analysis on the derivation of
+      $(t_2, t_3) = (\send B.S', t_3) \in \sequiv$:
+      \begin{enumerate}
+        \item $t_3 = \send B.S''$.
+
+          By inversion,
+          \begin{eqnarray*}
+            && (S, S') \in \sequiv \\
+            && (S', S'') \in \sequiv
+          \end{eqnarray*}
+          Thus, by def.,
+          \begin{equation*}
+            (S, S'') \in \Trans(\sequiv).
+          \end{equation*}
+          Thus, by Eq. \ref{def:equivalence:send},
+          \begin{equation*}
+            (t_1, t_3) = (\send B.S, \send B.S'') \in F_\sequiv(\Trans(\sequiv)).
+          \end{equation*}
+
+        \item
+          \label{case:transitivity:send:mu2}
+           $t_3 = \mu X.S''$.
+
+          By assumption,
+          \begin{eqnarray*}
+            && (\send B.S, \send B.S') \in \sequiv \\
+            && (\send B.S', \mu X.S'') \in \sequiv.
+          \end{eqnarray*}
+          Thus, by Eq. \ref{def:equivalence:mu2},
+          \begin{equation*}
+            (\send B.S', S''[X \mapsto \mu X.S'']) \in \sequiv.
+          \end{equation*}
+          Thus, by def.,
+          \begin{equation*}
+            (\send B.S, S''[X \mapsto \mu X.S'']) \in \Trans(\sequiv).
+          \end{equation*}
+          Thus, by Eq. \ref{def:equivalence:mu2},
+          \begin{equation*}
+            (t_1, t_3) = (\send B.S, \mu X.S'') \in F_\sequiv(\Trans(\sequiv)).
+          \end{equation*}
+      \end{enumerate}
+
+    \item
+      \label{case:transitivity:recv}
+      $(t_1, t_2) = (\recv B.S, \recv B.S')$. Analogous to case
+      \ref{case:transitivity:send}.
+
+    \item
+      \label{case:transitivity:echoice}
+      $(t_1, t_2) = (S_1 \echoice S_2, S_1' \echoice S_2')$;
+      $(S_1, S_1') \in \sequiv$;
+      $(S_2, S_2') \in \sequiv$.
+
+      Case analysis on the derivation of
+      $(t_2, t_3) = (S_1' \echoice S_2', t_3) \in \sequiv$:
+      \begin{enumerate}
+        \item Derivation by Eq. \ref{def:equivalence:mu2} ($t_3 = \mu X.S$).
+          Proceed as in case \ref{case:transitivity:send:mu2}.
+
+        \item $t_3 = S_1'' \echoice S_2''$; $(S_1', S_1'') \in \sequiv$;
+          $(S_2', S_2'') \in \sequiv$.
+
+          By Def. \ref{def:transitive_closure},
+          \begin{eqnarray*}
+            && (S_1, S_1'') \in \Trans(\sequiv). \\
+            && (S_2, S_2'') \in \Trans(\sequiv).
+          \end{eqnarray*}
+          Thus, by Eq. \ref{def:equivalence:echoice},
+          \begin{equation*}
+            (t_1, t_3) = (S_1 \echoice S_2, S_1'' \echoice S_2'') \in F_\sequiv(\Trans(\sequiv)).
+          \end{equation*}
+      \end{enumerate}
+
+    \item
+      \label{case:transitivity:ichoice}
+      $(t_1, t_2) = (S_1 \ichoice S_2, S_1' \ichoice S_2')$. Analogous to
+      case \ref{case:transitivity:echoice}.
+
+
+    \item
+      \label{case:transitivity:1}
+      $(t_1, t_2) = (1, 1)$.
+
+      Case analysis on the derivation of $(t_2, t_3) = (1, t_3) \in \sequiv$:
+      \begin{enumerate}
+        \item Derivation by Eq. \ref{def:equivalence:mu2} ($t_3 = \mu X.S$).
+          Proceed as in case \ref{case:transitivity:send:mu2}.
+
+        \item $t_3 = 1$. By Eq. \ref{def:equivalence:1},
+          \begin{equation*}
+            (t_1, t_3) = (1, 1) \in F_\sequiv(\Trans(\sequiv)).
+          \end{equation*}
+      \end{enumerate}
+
+  \end{enumerate}
+\end{proof}
+
+\begin{lemma}[Variable Ordering in Environments (No Proof)]
+  \label{lemma:environment_variable_ordering}
+  \begin{equation*}
+    XS, X, Y = XS, Y, X \quad \forall XS, X, Y.
+  \end{equation*}
+  %\begin{eqnarray*}
+  %  &&         \forall XS, X, Y, S. \\
+  %  &&         \envimplok{XS, X, Y}{S} \\
+  %  &\implies& \envimplok{XS, Y, X}{S}
+  %\end{eqnarray*}
+\end{lemma}
+
+%\begin{lemma}[Environment Extension (No Proof)]
+  %\label{lemma:environment_extension}
+  %\begin{eqnarray*}
+    %&&      \forall XS, X, S. \\
+    %&&      (\envimplok{XS}{S} \implies \envimplok{XS, X}{S}) \\
+    %&\land& (\envimplchecked{XS}{S} \implies \envimplchecked{XS, X}{S})
+  %\end{eqnarray*}
+%\end{lemma}
+%
+%\begin{proof}
+  %Induction on the construction of $S$:
+  %\begin{enumerate}
+    %\item
+      %\label{case:environment_extension:1}
+      %$S = 1$. Choose $XS, X$.
+%
+      %\begin{enumerate}
+        %\item $(\envimplok{XS}{1} \implies \envimplok{XS, X}{1})$.
+%
+          %By Def. \ref{def:wellformed},
+          %\begin{equation}
+            %\envimplok{XS, X}{1}.
+          %\end{equation}
+%
+        %\item $(\envimplchecked{XS}{1} \implies \envimplchecked{XS, X}{1})$.
+%
+          %By Def. \ref{def:wellformed},
+          %\begin{equation}
+            %\envimplok{XS}{1}.
+          %\end{equation}
+          %Thus, by Def. \ref{def:wellformed},
+          %\begin{equation}
+            %\envimplchecked{XS}{1}.
+          %\end{equation}
+      %\end{enumerate}
+%
+    %\item
+      %\label{case:environment_extension:send}
+      %$S = \send B.S'$.
+%
+      %Induction hypothesis:
+      %\begin{eqnarray}
+        %&&      \forall XS, X. \\
+        %&&      (\envimplok{XS}{S'} \implies \envimplok{XS, X}{S'}) \\
+        %&\land& (\envimplchecked{XS}{S'} \implies \envimplchecked{XS, X}{S'})
+      %\end{eqnarray}
+%
+      %Choose $XS, X$.
+      %\begin{enumerate}
+        %\item
+          %\label{case:environment_extension:send:1}
+          %$\envimplok{XS}{\send B.S'} \implies \envimplok{XS, X}{\send B.S'}$.
+%
+          %By assumption,
+          %\begin{equation}
+            %\envimplok{XS}{\send B.S'}.
+          %\end{equation}
+          %Thus, by inversion of Def. \ref{def:wellformed},
+          %\begin{equation}
+            %\envimplchecked{XS}{S'}.
+          %\end{equation}
+          %Thus, by the induction hypothesis,
+          %\begin{equation}
+            %\envimplchecked{XS, X}{S'}.
+          %\end{equation}
+          %Thus, by Def. \ref{def:wellformed},
+          %\begin{equation}
+            %\envimplok{XS, X}{\send B.S'}.
+          %\end{equation}
+%
+        %\item
+          %\label{case:environment_extension:send:2}
+          %$\envimplchecked{XS}{\send B.S'} \implies \envimplchecked{XS, X}{\send B.S'}$.
+%
+          %By assumption,
+          %\begin{equation}
+            %\envimplchecked{XS}{\send B.S'}.
+          %\end{equation}
+          %Thus, by inversion of Def. \ref{def:wellformed},
+          %\begin{equation}
+            %\envimplok{XS}{\send B.S'}.
+          %\end{equation}
+          %Thus, by case \ref{case:environment_extension:send:1},
+          %\begin{equation}
+            %\envimplok{XS, X}{\send B.S'}.
+          %\end{equation}
+          %Thus, by Def. \ref{def:wellformed},
+          %\begin{equation}
+            %\envimplchecked{XS, X}{\send B.S'}.
+          %\end{equation}
+      %\end{enumerate}
+%
+    %\item
+      %\label{case:environment_extension:recv}
+      %$S = \recv B.S'$.
+%
+      %Analogous to case \ref{case:environment_extension:send}.
+%
+    %\item
+      %\label{case:environment_extension:echoice}
+      %$S = S_1 \echoice S_2$.
+%
+      %Induction hypothesis:
+      %\begin{eqnarray*}
+        %&&      \forall XS, X. \\
+        %&&      (\envimplok{XS}{S_1} \implies \envimplok{XS, X}{S_1}) \\
+        %&\land& (\envimplok{XS}{S_2} \implies \envimplok{XS, X}{S_2}) \\
+        %&\land& (\envimplchecked{XS}{S_1} \implies \envimplchecked{XS, X}{S_1}) \\
+        %&\land& (\envimplchecked{XS}{S_2} \implies \envimplchecked{XS, X}{S_2})
+      %\end{eqnarray*}
+%
+      %Choose $XS, X$.
+      %\begin{enumerate}
+        %\item
+          %\label{case:environment_extension:echoice:1}
+          %$\envimplok{XS}{S_1 \echoice S_2} \implies \envimplok{XS, X}{S_1 \echoice S_2}$.
+%
+          %By assumption,
+          %\begin{equation}
+            %\envimplok{XS}{S_1 \echoice S_2}.
+          %\end{equation}
+          %Thus, by inversion of Def. \ref{def:wellformed},
+          %\begin{eqnarray}
+            %&& \envimplchecked{XS}{S_1} \\
+            %&& \envimplchecked{XS}{S_2}.
+          %\end{eqnarray}
+          %Thus, by the induction hypothesis,
+          %\begin{eqnarray}
+            %&& \envimplchecked{XS, X}{S_1} \\
+            %&& \envimplchecked{XS, X}{S_2}.
+          %\end{eqnarray}
+          %Thus, by Def. \ref{def:wellformed},
+          %\begin{eqnarray}
+            %&& \envimplchecked{XS, X}{S_1} \\
+            %&& \envimplchecked{XS, X}{S_2}.
+          %\end{eqnarray}
+          %Thus, by Def. \ref{def:wellformed},
+          %\begin{equation}
+            %\envimplchecked{XS, X}{S_1 \echoice S_2}.
+          %\end{equation}
+%
+        %\item
+          %\label{case:environment_extension:echoice:2}
+          %$\envimplchecked{XS}{S_1 \echoice S_2} \implies \envimplchecked{XS, X}{S_1 \echoice S_2}$.
+%
+          %By assumption,
+          %\begin{equation}
+            %\envimplchecked{XS}{S_1 \echoice S_2}.
+          %\end{equation}
+          %Thus, by inversion of Def. \ref{def:wellformed},
+          %\begin{equation}
+            %\envimplok{XS}{S_1 \echoice S_2}.
+          %\end{equation}
+          %Thus, by case \ref{case:environment_extension:echoice:1},
+          %\begin{equation}
+            %\envimplok{XS, X}{S_1 \echoice S_2}.
+          %\end{equation}
+          %Thus, by Def. \ref{def:wellformed},
+          %\begin{equation}
+            %\envimplchecked{XS, X}{S_1 \echoice S_2}.
+          %\end{equation}
+      %\end{enumerate}
+%
+    %\item
+      %\label{case:environment_extension:ichoice}
+      %$S = S_1 \ichoice S_2$.
+%
+      %Analogous to case \ref{case:environment_extension:echoice}.
+%
+    %\item
+      %\label{case:environment_extension:mu}
+      %$S = \mu Y.S'$.
+%
+      %Induction hypothesis:
+      %\begin{eqnarray*}
+        %&&      \forall XS, X. \\
+        %&&      (\envimplok{XS}{S'} \implies \envimplok{XS, X}{S'}) \\
+        %&\land& (\envimplchecked{XS}{S'} \implies \envimplchecked{XS, X}{S'})
+      %\end{eqnarray*}
+%
+      %Choose $XS, X$.
+      %\begin{enumerate}
+        %\item
+          %\label{case:environment_extension:mu:1}
+          %$\envimplok{XS}{\mu Y.S'} \implies \envimplok{XS, X}{\mu Y.S'}$.
+%
+          %By assumption,
+          %\begin{equation}
+            %\envimplok{XS}{\mu Y.S'}.
+          %\end{equation}
+          %Thus, by inversion of Def. \ref{def:wellformed},
+          %\begin{equation}
+            %\envimplok{XS, Y}{S'}.
+          %\end{equation}
+          %Thus, by the induction hypothesis,
+          %\begin{equation}
+            %\envimplok{XS, Y, X}{S'}.
+          %\end{equation}
+          %Thus, by Lemma \ref{lemma:environment_variable_ordering},
+          %\begin{equation}
+            %\envimplok{XS, X, Y}{S'}.
+          %\end{equation}
+          %Thus, by Def. \ref{def:wellformed},
+          %\begin{equation}
+            %\envimplok{XS, X}{\mu X.S'}.
+          %\end{equation}
+%
+        %\item
+          %\label{case:environment_extension:mu:2}
+          %$\envimplchecked{XS}{\mu Y.S'} \implies \envimplchecked{XS, X}{\mu Y.S'}$.
+%
+          %By assumption,
+          %\begin{equation}
+            %\envimplchecked{XS}{\mu Y.S'}.
+          %\end{equation}
+          %Thus, by inversion of Def. \ref{def:wellformed},
+          %\begin{equation}
+            %\envimplok{XS}{\mu Y.S'}.
+          %\end{equation}
+          %Thus, by case \ref{case:environment_extension:mu:1},
+          %\begin{equation}
+            %\envimplok{XS, X}{\mu Y.S'}.
+          %\end{equation}
+          %Thus, by Def. \ref{def:wellformed},
+          %\begin{equation}
+            %\envimplchecked{XS, X}{\mu Y.S'}.
+          %\end{equation}
+      %\end{enumerate}
+%
+    %\item
+      %\label{case:environment_extension:var}
+      %$S = Y$. Choose $XS, X$.
+%
+      %\begin{enumerate}
+        %\item $\envimplok{XS}{Y} \implies \envimplok{XS, X}{Y}$.
+%
+          %By assumption,
+          %\begin{equation}
+            %\envimplok{XS}{Y}.
+          %\end{equation}
+          %Thus, by inversion of Def. \ref{def:wellformed}, this case is
+          %impossible.
+%
+        %\item $\envimplchecked{XS}{Y} \implies \envimplchecked{XS, X}{Y}$.
+%
+          %By assumption,
+          %\begin{equation}
+            %\envimplchecked{XS}{Y}.
+          %\end{equation}
+          %By inversion of Def. \ref{def:wellformed},
+          %\begin{equation}
+            %XS = XS', Y.
+          %\end{equation}
+          %By Def. \ref{def:wellformed},
+          %\begin{equation}
+            %\envimplchecked{XS', X, Y}{Y}.
+          %\end{equation}
+          %Thus, by Lemma \ref{lemma:environment_variable_ordering},
+          %\begin{equation}
+            %\envimplchecked{XS, X}{Y}.
+          %\end{equation}
+      %\end{enumerate}
+  %\end{enumerate}
+%\end{proof}
+
+\begin{lemma}[Environment Compaction (No Proof)]
+  \label{lemma:environment_compaction}
+  \begin{equation*}
+    XS, X, X = XS, X \quad \forall XS, X.
+  \end{equation*}
+\end{lemma}
+
+\begin{lemma}[Overriding Exchange (No Proof)]
+  \label{lemma:overriding_exchange}
+  \begin{eqnarray*}
+    &&         \forall f, x, y, a, b. \\
+    &&         x \neq y \\
+    &\implies& f[x \mapsto a][y \mapsto b] = f[y \mapsto b][x \mapsto a]
+  \end{eqnarray*}
+\end{lemma}
+
+\begin{lemma}[Substitution in $L_\eta$]
+  \label{lemma:substitution_trace_language}
+  \begin{equation*}
+    L_{\eta[X \mapsto L_\eta(T)]}(S) = L_\eta(S[X \mapsto T]) \quad \forall S, T, X, \eta.
+  \end{equation*}
+\end{lemma}
+
+\begin{proof}
+  Choose $T, X$. Induction over the construction of $S$.
+  \begin{enumerate}
+    \item
+      \label{case:substitution_trace_language:1}
+      $S = 1$.
+
+      Choose $\eta$. By Def. \ref{def:trace_language},
+      \begin{eqnarray*}
+        &&  L_{\eta[X \mapsto L_\eta(T)]}(1) \\
+        &=& \{\epsilon\}
+            \quad \text{(by Eq. \ref{def:trace_language:1})} \\
+        &=& L_\eta(1)
+            \quad \text{(by Eq. \ref{def:trace_language:1})} \\
+        &=& L_\eta(1[X \mapsto T])
+            \quad \text{(by Def. of substitution)}.
+      \end{eqnarray*}
+
+    \item
+      \label{case:substitution_trace_language:send}
+      $S = \send B.S'$.
+
+      Induction hypothesis:
+      \begin{equation*}
+        L_{\eta[X \mapsto L_\eta(T)]}(S') = L_\eta(S'[X \mapsto T]) \quad \forall \eta.
+      \end{equation*}
+
+      Choose $\eta$.
+      \begin{eqnarray*}
+        &&  L_{\eta[X \mapsto L_\eta(T)]}(\send B.S') \\
+        &=& \{\send B\} \concat L_{\eta[X \mapsto L_\eta(T)]}(S')
+            \quad \text{(by Eq. \ref{def:trace_language:send})} \\
+        &=& \{\send B\} \concat L_\eta(S'[X \mapsto T])
+            \quad \text{(by IH)} \\
+        &=& L_\eta(\send B.(S'[X \mapsto T]))
+            \quad \text{(by Eq. \ref{def:trace_language:send})} \\
+        &=& L_\eta((\send B.S')[X \mapsto T])
+            \quad \text{(by Def. of substitution)}.
+      \end{eqnarray*}
+
+    \item
+      \label{case:substitution_trace_language:recv}
+      $S = \recv B.S'$.
+
+      Analogous to case \ref{case:substitution_trace_language:send}.
+
+    \item
+      \label{case:substitution_trace_language:echoice}
+      $S = S_1 \echoice S_2$.
+
+      Induction hypothesis:
+      \begin{eqnarray*}
+        &&      L_{\eta[X \mapsto L_\eta(T)]}(S_1) = L_\eta(S_1[X \mapsto T]) \\
+        &\land& L_{\eta[X \mapsto L_\eta(T)]}(S_2) = L_\eta(S_2[X \mapsto T])
+      \end{eqnarray*}
+
+      Choose $\eta$.
+      \begin{eqnarray*}
+        &&  L_{\eta[X \mapsto L_\eta(T)]}(S_1 \echoice S_2) \\
+        &=& \{\send 0\} . L_{\eta[X \mapsto L_\eta(T)]}(S_1) \union \{\send 1\} . L_{\eta[X \mapsto L_\eta(T)]}(S_2)
+            \quad \text{(by Eq. \ref{def:trace_language:echoice})} \\
+        &=& \{\send 0\} . L_\eta(S_1[X \mapsto T]) \union \{\send 1\} . L_\eta(S_2[X \mapsto T])
+            \quad \text{(by IH)} \\
+        &=& L_\eta(S_1[X \mapsto T] \echoice S_2[X \mapsto T])
+            \quad \text{(by Eq. \ref{def:trace_language:echoice})} \\
+        &=& L_\eta((S_1 \echoice S_2)[X \mapsto T])
+            \quad \text{(by def. of substitution)}.
+      \end{eqnarray*}
+
+    \item
+      \label{case:substitution_trace_language:ichoice}
+      $S = S_1 \ichoice S_2$.
+
+      Analogous to case \ref{case:substitution_trace_language:echoice}.
+
+    \item
+      \label{case:substitution_trace_language:mu1}
+      $S = \mu X.S'$.
+
+      Induction hypothesis:
+      \begin{equation*}
+        L_{\eta[X \mapsto L_\eta(T)]}(S') = L_\eta(S'[X \mapsto T]) \quad \forall \eta.
+      \end{equation*}
+
+      Choose $\eta$.
+      \begin{eqnarray*}
+        &&  L_{\eta[X \mapsto L_\eta(T)]}(\mu X.S') \\
+        &=& \gfp(LX \mapsto L_{\eta[X \mapsto L_\eta(T)][X \mapsto LX]}(S'))
+            \quad \text{(by Eq. \ref{def:trace_language:mu})} \\
+        &=& \gfp(LX \mapsto L_{\eta[X \mapsto LX]}(S'))
+            \quad \text{(by def. of overriding)} \\
+        &=& L_\eta(\mu X.S')
+            \quad \text{(by Eq. \ref{def:trace_language:mu})} \\
+        &=& L_\eta((\mu X.S')[X \mapsto T])
+            \quad \text{(by def. of substitution)}. \\
+      \end{eqnarray*}
+
+    \item
+      \label{case:substitution_trace_language:mu2}
+      $S = \mu Y.S'$, $X \neq Y$.
+
+      Induction hypothesis:
+      \begin{equation*}
+        L_{\eta[X \mapsto L_\eta(T)]}(S') = L_\eta(S'[X \mapsto T]) \quad \forall \eta.
+      \end{equation*}
+
+      Choose $\eta$.
+      \begin{eqnarray*}
+        &&  L_{\eta[X \mapsto L_\eta(T)]}(\mu Y.S') \\
+        &=& \gfp(LX \mapsto L_{\eta[X \mapsto L_\eta(T)][Y \mapsto LX]}(S'))
+            \quad \text{(by Eq. \ref{def:trace_language:mu})} \\
+        &=& \gfp(LX \mapsto L_{\eta[Y \mapsto LX][X \mapsto L_\eta(T)]}(S'))
+            \quad \text{(by Lemma \ref{lemma:overriding_exchange})} \\
+        &=& \gfp(LX \mapsto L_{\eta[Y \mapsto LX]}(S'[X \mapsto T]))
+            \quad \text{(by IH)} \\
+        &=& L_\eta((\mu Y.(S'[X \mapsto T]))
+            \quad \text{(by Eq. \ref{def:trace_language:mu})} \\
+        &=& L_\eta((\mu Y.S')[X \mapsto T])
+            \quad \text{(by def. of substitution)}. \\
+      \end{eqnarray*}
+
+    \item
+      \label{case:substitution_trace_language:var1}
+      $S = X$.
+
+      Choose $\eta$.
+      \begin{eqnarray*}
+        &&  L_{\eta[X \mapsto L_\eta(T)]}(X) \\
+        &=& \eta[X \mapsto L_\eta(T)](X)
+            \quad \text{(by Eq. \ref{def:trace_language:var})} \\
+        &=& L_\eta(T)
+            \quad \text{(by def. of overriding)} \\
+        &=& L_\eta(X[X \mapsto T])
+            \quad \text{(by def. of substitution)}
+      \end{eqnarray*}
+
+    \item
+      \label{case:substitution_trace_language:var2}
+      $S = Y$, $X \neq Y$.
+
+      Choose $\eta$.
+      \begin{eqnarray*}
+        &&  L_{\eta[X \mapsto L_\eta(T)]}(Y) \\
+        &=& \eta[X \mapsto L_\eta(T)](Y)
+            \quad \text{(by Eq. \ref{def:trace_language:var})} \\
+        &=& \eta(Y)
+            \quad \text{(by def. of overriding)} \\
+        &=& L_\eta(Y)
+            \quad \text{(by Eq. \ref{def:trace_language:var})} \\
+        &=& L_\eta(Y[X \mapsto T])
+            \quad \text{(by def. of substitution)}
+      \end{eqnarray*}
+
+  \end{enumerate}
+\end{proof}
+
+\begin{lemma}[Trace Language of $\mu$ Expansion]
+  \label{lemma:mu_expansion_trace_language}
+  \begin{equation*}
+    L_\eta(\mu X.S) = L_\eta(S[X \mapsto \mu X.S]) \quad \forall \eta, X, S.
+  \end{equation*}
+\end{lemma}
+
+\begin{proof}
+  Choose $\eta, X, S$.
+  \begin{eqnarray*}
+    &&  L_\eta(\mu X.S) \\
+    &=& \gfp(LX \mapsto L_{\eta[X \mapsto LX]}(S))
+        \quad \text{(by Eq. \ref{def:trace_language:mu})} \\
+    &=& L_{\eta[X \mapsto L_\eta(\mu X.S)]}(S)
+        \quad \text{(due to $L_\eta(\mu X.S)$ a fixed point)} \\
+    &=& L_\eta(S[X \mapsto \mu X.S])
+        \quad \text{(by Lemma \ref{lemma:substitution_trace_language})}.
+  \end{eqnarray*}
+\end{proof}
+
+\begin{lemma}[Wellformedness-Preserving Substitution]
+  \label{lemma:substitution_wellformedness}
+  \begin{eqnarray*}
+    &&         \forall S, T, XS, X. \\
+    &&         \envimplok{XS, X}{S} \\
+    &\land&    \envimplok{XS}{T} \\
+    &\implies& \envimplok{XS}{S[X \mapsto T]}.
+  \end{eqnarray*}
+\end{lemma}
+
+\begin{proof}
+  Choose $X, T$. Induction over the construction of $S$.
+  \begin{enumerate}
+    \item
+      \label{case:substitution_wellformedness:1}
+      $S = 1$.
+
+      Choose $XS$. By Def. \ref{def:wellformed},
+      \begin{equation*}
+        \envimplok{XS}{1}.
+      \end{equation*}
+
+    \item
+      \label{case:substitution_wellformedness:send}
+      $S = \send B.S'$.
+
+      Induction hypothesis:
+      \begin{eqnarray*}
+        &&         \forall XS. \\
+        &&         \envimplok{XS, X}{S'} \\
+        &\land&    \envimplok{XS}{T} \\
+        &\implies& \envimplok{XS}{S'[X \mapsto T]}.
+      \end{eqnarray*}
+
+      Choose $XS$. By assumption,
+      \begin{equation*}
+        \envimplok{XS, X}{\send B.S'}.
+      \end{equation*}
+      Thus, by inversion of Def. \ref{def:wellformed},
+      \begin{equation*}
+        \envimplchecked{XS, X}{S'}.
+      \end{equation*}
+      Case analysis on the derivation of $(\envimplchecked{XS, X}{S'})$:
+      \begin{enumerate}
+        \item $S' = X$.
+          By assumption,
+          \begin{equation*}
+            \envimplok{XS}{T}.
+          \end{equation*}
+          Thus, by the def. of substitution,
+          \begin{equation*}
+            \envimplok{XS}{S'[X \mapsto T]}.
+          \end{equation*}
+
+        \item $\envimplok{XS, X}{S'}$.
+          By the induction hypothesis,
+          \begin{equation*}
+            \envimplok{XS}{S'[X \mapsto T]}.
+          \end{equation*}
+      \end{enumerate}
+
+      Thus, in both cases, by Def. \ref{def:wellformed},
+      \begin{equation*}
+        \envimplchecked{XS}{S'[X \mapsto T]}.
+      \end{equation*}
+      Thus, by Def. \ref{def:wellformed},
+      \begin{equation*}
+        \envimplok{XS}{!B.(S'[X \mapsto T])}.
+      \end{equation*}
+      Thus, by the def. of substitution,
+      \begin{equation*}
+        \envimplok{XS}{(!B.S')[X \mapsto T]}.
+      \end{equation*}
+
+    \item
+      \label{case:substitution_wellformedness:recv}
+      $S = \recv B.S'$.
+
+      Analogous to case \ref{case:substitution_wellformedness:send}.
+
+    \item
+      \label{case:substitution_wellformedness:echoice}
+      $S = S_1 \echoice S_2$.
+
+      Induction hypothesis: For $i \in \{1, 2\}$,
+      \begin{eqnarray*}
+        &&         \forall XS. \\
+        &&         \envimplok{XS, X}{S_i} \\
+        &\land&    \envimplok{XS}{T} \\
+        &\implies& \envimplok{XS}{S_i[X \mapsto T]};
+      \end{eqnarray*}
+
+      Choose $XS$. By assumption,
+      \begin{equation*}
+        \envimplok{XS, X}{S_1 \echoice S_2}.
+      \end{equation*}
+      By inversion of Def. \ref{def:wellformed},
+      \begin{eqnarray*}
+        &&      \envimplchecked{XS, X}{S_1} \\
+        &\land& \envimplchecked{XS, X}{S_2}.
+      \end{eqnarray*}
+      Case analysis on the derivation of $\envimplchecked{XS, X}{S_i}$:
+      \begin{enumerate}
+        \item $S_i = X$.
+          By assumption,
+          \begin{equation*}
+            \envimplok{XS}{T}.
+          \end{equation*}
+          Thus, by the def. of substitution,
+          \begin{equation*}
+            \envimplok{XS}{S_i[X \mapsto T]}.
+          \end{equation*}
+
+        \item $\envimplok{XS, X}{S_i}$.
+          Thus, the induction hypothesis,
+          \begin{equation*}
+            \envimplok{XS}{S_i[X \mapsto T]}.
+          \end{equation*}
+      \end{enumerate}
+
+      Thus, in both cases, by Def. \ref{def:wellformed},
+      \begin{equation*}
+        \envimplchecked{XS}{S_i[X \mapsto T]}.
+      \end{equation*}
+      Thus, by Def. \ref{def:wellformed},
+      \begin{equation*}
+        \envimplok{XS}{S_1[X \mapsto T] \echoice S_2[X \mapsto T]}.
+      \end{equation*}
+      Thus, by the def. of substitution,
+      \begin{equation*}
+        \envimplok{XS}{(S_1 \echoice S_2)[X \mapsto T]}.
+      \end{equation*}
+
+    \item
+      \label{case:substitution_wellformedness:ichoice}
+      $S = S_1 \ichoice S_2$.
+
+      Analogous to case \ref{case:substitution_wellformedness:echoice}.
+
+    \item
+      \label{case:substitution_wellformedness:mu1}
+      $S = \mu X.S'$.
+
+      Choose $XS$. By assumption,
+      \begin{equation*}
+        \envimplok{XS, X}{\mu X.S'}.
+      \end{equation*}
+      Thus, by inversion of Def. \ref{def:wellformed},
+      \begin{equation*}
+        \envimplok{XS, X, X}{S'}.
+      \end{equation*}
+      Thus, by Lemma \ref{lemma:environment_compaction},
+      \begin{equation*}
+        \envimplok{XS, X}{S'}.
+      \end{equation*}
+      Thus, by Def. \ref{def:wellformed},
+      \begin{equation*}
+        \envimplok{XS}{\mu X.S'}.
+      \end{equation*}
+      Thus, by the def. of substitution,
+      \begin{equation*}
+        \envimplok{XS}{(\mu X.S')[X \mapsto T]}.
+      \end{equation*}
+
+    \item
+      \label{case:substitution_wellformedness:mu2}
+      $S = \mu Y.S'$, $X \neq Y$.
+
+      Induction hypothesis:
+      \begin{eqnarray*}
+        &&         \forall XS. \\
+        &&         \envimplok{XS, X}{S'} \\
+        &\land&    \envimplok{XS}{T} \\
+        &\implies& \envimplok{XS}{S'[X \mapsto T]};
+      \end{eqnarray*}
+
+      Choose $XS$. By assumption,
+      \begin{equation*}
+        \envimplok{XS, X}{\mu Y.S'}.
+      \end{equation*}
+      Thus, by inversion of Def. \ref{def:wellformed},
+      \begin{equation*}
+        \envimplok{XS, X, Y}{S'}.
+      \end{equation*}
+      Thus, by Lemma \ref{lemma:environment_variable_ordering},
+      \begin{equation*}
+        \envimplok{XS, Y, X}{S'}.
+      \end{equation*}
+      Thus, by the induction hypothesis,
+      \begin{equation*}
+        \envimplok{XS, Y}{S'[X \mapsto T]}.
+      \end{equation*}
+      Thus, by Def. \ref{def:wellformed},
+      \begin{equation*}
+        \envimplok{XS}{\mu Y.(S'[X \mapsto T])}.
+      \end{equation*}
+      Thus, by the def. of substitution,
+      \begin{equation*}
+        \envimplok{XS}{(\mu Y.S')[X \mapsto T])}.
+      \end{equation*}
+
+  \end{enumerate}
+\end{proof}
+
+\begin{lemma}[Inversion of Wellformedness]
+  \label{lemma:inversion_wellformedness}
+  \begin{eqnarray*}
+    &&      \forall S, S_1, S_2, X. \\
+    &&      (\wf{\send B.S} \implies \wf{S}) \\
+    &\land& (\wf{\recv B.S} \implies \wf{S}) \\
+    &\land& (\wf{S_1 \echoice S_2} \implies \wf{S_1} \land \wf{S_2}) \\
+    &\land& (\wf{S_1 \ichoice S_2} \implies \wf{S_1} \land \wf{S_2}) \\
+    &\land& (\wf{\mu X.S} \implies \wf{S[X \mapsto \mu X.S]})
+  \end{eqnarray*}
+\end{lemma}
+
+\begin{proof}
+  Choose $S, S_1, S_2, X$.
+  \begin{enumerate}
+    \item
+      \label{case:inversion_wellformedness:send}
+      $\wf{\send B.S} \implies \wf{S}$.
+
+      By assumption,
+      \begin{equation*}
+        \envimplok{0}{\send B.S}.
+      \end{equation*}
+      Thus, by inversion of Def. \ref{def:wellformed},
+      \begin{equation*}
+        \envimplchecked{0}{S}.
+      \end{equation*}
+      Thus, by inversion of Def. \ref{def:wellformed},
+      \begin{equation*}
+        \envimplok{0}{S}.
+      \end{equation*}
+
+    \item
+      \label{case:inversion_wellformedness:recv}
+      $\wf{\recv B.S} \implies \wf{S}$.
+
+      Analogous to case \ref{case:inversion_wellformedness:send}.
+
+    \item
+      \label{case:inversion_wellformedness:echoice}
+      $\wf{S_1 \echoice S_2} \implies \wf{S_1} \land \wf{S_2}$.
+
+      By assumption,
+      \begin{equation*}
+        \envimplok{0}{S_1 \echoice S_2}.
+      \end{equation*}
+      Thus, by inversion of Def. \ref{def:wellformed},
+      \begin{eqnarray*}
+        &&      \envimplchecked{0}{S_1} \\
+        &\land& \envimplchecked{0}{S_2}.
+      \end{eqnarray*}
+      Thus, by inversion of Def. \ref{def:wellformed},
+      \begin{eqnarray*}
+        &&      \envimplok{0}{S_1} \\
+        &\land& \envimplok{0}{S_2}.
+      \end{eqnarray*}
+
+    \item
+      \label{case:inversion_wellformedness:ichoice}
+      $\wf{S_1 \ichoice S_2} \implies \wf{S_1} \land \wf{S_2}$.
+
+      Analogous to case \ref{case:inversion_wellformedness:echoice}.
+
+    \item
+      \label{case:inversion_wellformedness:mu}
+      $\wf{\mu X.S} \implies \wf{S[X \mapsto \mu X.S]}$.
+
+      By assumption,
+      \begin{equation*}
+        \envimplok{0}{\mu X.S}.
+      \end{equation*}
+      By inversion of Def. \ref{def:wellformed},
+      \begin{equation*}
+        \envimplok{0, X}{S}.
+      \end{equation*}
+      By Lemma \ref{lemma:substitution_wellformedness},
+      \begin{equation*}
+        \envimplok{0}{S[X \mapsto \mu X.S]}.
+      \end{equation*}
+  \end{enumerate}
+\end{proof}
+
+\begin{theorem}[Trace Equality implies Equivalence]
+  \label{th:equality_equivalence}
+  \begin{eqnarray*}
+    &&         \forall S, S' \in \Sy. \\
+    &&         \wf{S} \\
+    &\land&    \wf{S'} \\
+    &\land&    (\forall \eta.\, L_\eta(S) = L_\eta(S')) \\
+    &\implies& (S, S') \in \sequiv.
+  \end{eqnarray*}
+\end{theorem}
+
+\begin{proof}
+  Let
+  \begin{equation*}
+    R := \{(S, S') \| \wf{S}, \wf{S'}, \forall \eta.\, L_\eta(S) = L_\eta(S') \}.
+  \end{equation*}
+  We will show that
+  \begin{equation*}
+    R \subseteq F_\sequiv(R)
+  \end{equation*}
+  which, by the fixed-point theorem, implies
+  \begin{equation*}
+    R \subseteq \sequiv.
+  \end{equation*}
+
+  Choose $(S, S') \in R$.
+  Case analysis on the construction of $S$ and $S'$:
+  \begin{enumerate}
+    \item
+      \label{case:equality_equivalence:mu1}
+      $(S, S') = (\mu X.T, S')$.
+
+      By Lemma \ref{lemma:mu_expansion_trace_language},
+      \begin{equation*}
+        \forall \eta.\, L_\eta(T[X \mapsto \mu X.T]) = L_\eta(\mu X.T).
+      \end{equation*}
+      Thus, by assumption,
+      \begin{equation}
+        \label{eq:equality_equivalence:1:mu1:ls}
+        \forall \eta.\, L_\eta(T[X \mapsto \mu X.T]) = L_\eta(S').
+      \end{equation}
+
+      By assumption,
+      \begin{equation*}
+        \wf{\mu X.T}.
+      \end{equation*}
+      Thus, by Lemma \ref{lemma:inversion_wellformedness},
+      \begin{equation}
+        \label{eq:equality_equivalence:1:mu1:wf}
+        \wf{T[X \mapsto \mu X.T]}.
+      \end{equation}
+
+      Due to Eqs. \ref{eq:equality_equivalence:1:mu1:ls} and
+      \ref{eq:equality_equivalence:1:mu1:wf} and by assumption
+      $\wf{S'}$,
+      \begin{equation*}
+        (T[X \mapsto \mu X.T], S') \in R.
+      \end{equation*}
+      Thus, by Eq. \ref{def:equivalence:mu1},
+      \begin{equation*}
+        (S, S') = (\mu X.T, S') \in F_\sequiv(R).
+      \end{equation*}
+
+    \item
+      \label{case:equality_equivalence:mu2}
+      $(S, S') = (S, \mu X.T)$.
+
+      Symmetric to case \ref{case:equality_equivalence:mu1}.
+
+    \item
+      \label{case:equality_equivalence:send}
+      $(S, S') = (\send B.T, \send B.T')$.
+
+      By Def. \ref{def:trace_language},
+      \begin{eqnarray*}
+        &&      \forall \eta. \\
+        &&      L_\eta(\send B.T)  = \{\send B\} \concat L_\eta(T) \\
+        &\land& L_\eta(\send B.T') = \{\send B\} \concat L_\eta(T')
+      \end{eqnarray*}
+      Thus, by inversion of $L_\eta(S) = L_\eta(S')$:
+      \begin{equation}
+        \label{eq:equality_equivalence:send:ls}
+        \forall \eta.\, L_\eta(T) = L_\eta(T').
+      \end{equation}
+
+      By Lemma \ref{lemma:inversion_wellformedness},
+      \begin{eqnarray}
+        \label{eq:equality_equivalence:send:wf:1} &&      \wf{T} \\
+        \label{eq:equality_equivalence:send:wf:2} &\land& \wf{T'}
+      \end{eqnarray}
+
+      Due to Eqs. \ref{eq:equality_equivalence:send:ls},
+      \ref{eq:equality_equivalence:send:wf:1} and
+      \ref{eq:equality_equivalence:send:wf:2},
+      \begin{equation*}
+        (T, T') \in R.
+      \end{equation*}
+      Thus, by Eq. \ref{def:equivalence:send},
+      \begin{equation*}
+        (\send B.T, \send B.T') \in F_\sequiv(R).
+      \end{equation*}
+
+    \item
+      \label{case:equality_equivalence:recv}
+      $(S, S') = (\recv B.T, \recv B.T')$.
+
+      Analogous to case \ref{case:equality_equivalence:send}.
+
+    \item
+      \label{case:equality_equivalence:echoice}
+      $(S, S') = (T_1 \echoice T_2, T_1' \echoice T_2')$.
+
+      By Def. \ref{def:trace_language},
+      \begin{eqnarray*}
+        &&      \forall \eta. \\
+        &&      L_\eta(T_1 \echoice T_2)   = \{\send 0\} \concat L_\eta(T_1) \union \{\send 1\} \concat L_\eta(T_2) \\
+        &\land& L_\eta(T_1' \echoice T_2') = \{\send 0\} \concat L_\eta(T_1') \union \{\send 1\} \concat L_\eta(T_2') \\
+      \end{eqnarray*}
+      Thus, by inversion of $L_\eta(S) = L_\eta(S')$:
+      \begin{eqnarray}
+        \label{eq:equality_equivalence:echoice:ls:1} && \forall \eta.\, L_\eta(T_1) = L_\eta(T_1') \\
+        \label{eq:equality_equivalence:echoice:ls:2} && \forall \eta.\, L_\eta(T_2) = L_\eta(T_2').
+      \end{eqnarray}
+
+      By Lemma \ref{lemma:inversion_wellformedness},
+      \begin{eqnarray}
+        \label{eq:equality_equivalence:echoice:wf:1} &&      \wf{T_1} \\
+        \label{eq:equality_equivalence:echoice:wf:2} &\land& \wf{T_2} \\
+        \label{eq:equality_equivalence:echoice:wf:3} &\land& \wf{T_1'} \\
+        \label{eq:equality_equivalence:echoice:wf:4} &\land& \wf{T_2'}
+      \end{eqnarray}
+
+      Due to Eqs.
+      \ref{eq:equality_equivalence:echoice:ls:1},
+      \ref{eq:equality_equivalence:echoice:ls:2},
+      \ref{eq:equality_equivalence:echoice:wf:1},
+      \ref{eq:equality_equivalence:echoice:wf:2},
+      \ref{eq:equality_equivalence:echoice:wf:3} and
+      \ref{eq:equality_equivalence:echoice:wf:4},
+      \begin{eqnarray*}
+        &&      (T_1, T_1') \in R \\
+        &\land& (T_2, T_2') \in R.
+      \end{eqnarray*}
+      Thus, by Eq. \ref{def:equivalence:echoice},
+      \begin{equation*}
+        (T_1 \echoice T_2, T_1' \echoice T_2') \in F_\sequiv(R).
+      \end{equation*}
+
+    \item
+      \label{case:equality_equivalence:ichoice}
+      $(S, S') = (T_1 \ichoice T_2, T_1' \ichoice T_2')$.
+
+      Analogous to case \ref{case:equality_equivalence:echoice}.
+
+    \item
+      \label{case:equality_equivalence:var1}
+      $(S, S') = (X, S')$.
+
+      By assumption,
+      \begin{equation*}
+        \wf{X}.
+      \end{equation*}
+      But by inversion of Def. \ref{def:wellformed}, this is impossible.
+
+    \item
+      \label{case:equality_equivalence:var2}
+      $(S, S') = (S, X)$.
+
+      Symmetric to case \ref{case:equality_equivalence:var2}.
+
+    \item
+      \label{case:equality_equivalence:other}
+      All other combinations of $(S, S')$ are impossible due to the assumption
+      that $L_\eta(S) = L_\eta(S')$.
+  \end{enumerate}
+\end{proof}
+\end{document}
