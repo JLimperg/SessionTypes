@@ -1,6 +1,6 @@
 Require Import CompleteSubstitution CompleteSubstitutionFacts Equivalence Free
-  FreeFacts NonEquivalence SessionTypes SessionTypesInd Substitution
-  SubstitutionFacts Shape Symmetry Tac Msg Var Wellformed.
+  FreeFacts LibRelation LibLogic NonEquivalence SessionTypes SessionTypesInd
+  Substitution SubstitutionFacts Shape Symmetry Tac Msg Var Wellformed.
 
 (* --------------------------------------------------------------------------*)
 (* Automation *)
@@ -151,4 +151,20 @@ Lemma not_nsequiv_sequiv :
 Proof.
   intros. apply sequiv_coind with (R := R_not_nsequiv_sequiv);
   auto using not_nsequiv_sequiv' with nsequiv.
+Qed.
+
+
+(* --------------------------------------------------------------------------*)
+(* nsequiv <-> ~ sequiv *)
+
+Lemma nsequiv_not_sequiv_iff :
+  forall S S',
+  wellformed S ->
+  wellformed S' ->
+  (nsequiv S S' <-> ~ sequiv S S').
+Proof.
+  introv Hok Hok'. split; introv H.
+  + unfold wellformed in *; eapply nsequiv_not_sequiv; eauto.
+  + gen H. apply contrapose_elim. introv H. apply not_not_intro.
+    apply not_nsequiv_sequiv; auto using wellformed_closed.
 Qed.
