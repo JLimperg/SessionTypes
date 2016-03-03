@@ -17,7 +17,17 @@
 \newcommand*{\lfp}{\mathrm{lfp}}
 \newcommand*{\gfp}{\mathrm{gfp}}
 \newcommand*{\cs}{\mathrm{cs}}
+\newcommand*{\Shape}{\mathrm{Shape}}
+\newcommand*{\shape}{\mathrm{shape}}
+\newcommand*{\unitS}{\mathrm{unitS}}
+\newcommand*{\sendS}{\mathrm{sendS}}
+\newcommand*{\recvS}{\mathrm{recvS}}
+\newcommand*{\echoiceS}{\mathrm{echoiceS}}
+\newcommand*{\ichoiceS}{\mathrm{ichoiceS}}
+\newcommand*{\muS}{\mathrm{muS}}
+\newcommand*{\varS}{\mathrm{varS}}
 \newcommand*{\sequiv}{\sim}
+\newcommand*{\nsequiv}{\not\sim}
 \newcommand*{\union}{\cup}
 \newcommand*{\send}{\mathord{!}}
 \newcommand*{\recv}{\mathord{?}}
@@ -643,6 +653,274 @@
       \label{case:equality_equivalence:other}
       All other cases are impossible due to the assumption that
       $L_\eta(S) = L_\eta(S')$ for some $\eta$.
+  \end{enumerate}
+\end{proof}
+
+
+\begin{definition}[Shape of a Session Type]
+  \label{def:shape}
+  Let
+  \begin{equation*}
+    \Shape := \{\unitS, \sendS, \recvS, \echoiceS, \ichoiceS, \muS, \varS \}.
+  \end{equation*}
+  The function $\shape\colon \Ty \to \Shape$ is inductively defined by the
+  following equations:
+  \begin{eqnarray*}
+    \shape(1) &:=& \unitS \\
+    \shape(\send B.S) &:=& \sendS \quad \forall B \in \Msg;\; S \in \Ty \\
+    \shape(\recv B.S) &:=& \recvS \quad \forall B \in \Msg;\; S \in \Ty \\
+    \shape(S_1 \echoice S_2) &:=& \echoiceS \quad \forall S_1, S_2 \in Ty \\
+    \shape(S_1 \ichoice S_2) &:=& \ichoiceS \quad \forall S_1, S_2 \in Ty \\
+    \shape(\mu X.S) &:=& \muS \quad \forall X \in \Var;\; S \in Ty \\
+    \shape(X) &:=& \varS \quad \forall X \in \Var
+  \end{eqnarray*}
+
+  \machdef{\code{Shape.Shape} and \code{Shape.shape} resp.}
+\end{definition}
+
+
+\begin{definition}[Nonequivalence of Session Types]
+  \label{def:nsequiv}
+  The relation $\nsequiv \subseteq \Ty \times \Ty$ is inductively defined
+  by the following inference rules:
+  \begin{eqnarray*}
+    && S \nsequiv S' \\
+      &\implies& \send B.S \nsequiv \send B.S'
+      \quad \forall B \in \Msg;\; S,S' \in \Ty \\
+    && B \neq B' \\
+      &\implies& \send B.S \nsequiv \send B'.S'
+      \quad \forall B,B' \in \Msg;\; S,S' \in \Ty \\
+    && S \nsequiv S' \\
+      &\implies& \recv B.S \nsequiv \recv B.S'
+      \quad \forall B \in \Msg;\; S,S' \in \Ty \\
+    &&B \neq B' \\
+      &\implies& \recv B.S \nsequiv \recv B'.S'
+      \quad \forall B,B' \in \Msg;\; S,S' \in \Ty \\
+    && S_1 \nsequiv S_1' \\
+      &\implies& S_1 \echoice S_2 \nsequiv S_1' \echoice S_2'
+      \quad \forall S_1,S_2,S_1',S_2' \in \Ty \\
+    && S_2 \nsequiv S_2' \\
+      &\implies& S_1 \echoice S_2 \nsequiv S_1' \echoice S_2'
+      \quad \forall S_1,S_2,S_1',S_2' \in \Ty \\
+    && S_1 \nsequiv S_1' \\
+      &\implies& S_1 \ichoice S_2 \nsequiv S_1' \ichoice S_2'
+      \quad \forall S_1,S_2,S_1',S_2' \in \Ty \\
+    && S_2 \nsequiv S_2' \\
+      &\implies& S_1 \ichoice S_2 \nsequiv S_1' \ichoice S_2'
+      \quad \forall S_1,S_2,S_1',S_2' \in \Ty \\
+    && S \nsequiv S'[X \mapsto \mu X.S'] \\
+      &\implies& S \nsequiv \mu X.S'
+      \quad \forall X \in \Var;\; S,S' \in \Ty \\
+    && S[X \mapsto \mu X.S] \nsequiv S' \\
+      &\implies& \mu X.S \nsequiv S'
+      \quad \forall X \in \Var;\; S,S' \in \Ty \\
+    && \shape(S) \neq \shape(S') \land \shape(S) \neq \muS \land \shape(S') \neq \muS \\
+      &\implies& S \nsequiv S'
+      \quad \forall S,S' \in \Ty
+  \end{eqnarray*}
+
+  \machdefc{Nonequivalence.nsequiv}
+\end{definition}
+
+
+\begin{lemma}[Nonequivalence is Correct]
+  \label{lemma:nsequiv_correct}
+  \begin{eqnarray*}
+    &&         \forall S, S' \in \Ty. \\
+    &&         \wf{S} \\
+    &\implies& \wf{S'} \\
+    &\implies& (S \nsequiv S' \iff \lnot S \sequiv S')
+  \end{eqnarray*}
+
+  \machproofc{EquivalenceFacts.nsequiv\_not\_sequiv\_iff}
+\end{lemma}
+
+
+\begin{theorem}[Trace Equality Implies Equivalence (Alternative Proof)]
+  \label{th:equality_equivalence2}
+  \begin{eqnarray*}
+    &&         \forall S, S'. \\
+    &&         \wf{S} \\
+    &\implies& \wf{S'} \\
+    &\implies& \forall \eta.\, L_\eta(S) = L_\eta(S') \\
+    &\implies& S \sequiv S'
+  \end{eqnarray*}
+\end{theorem}
+
+\begin{proof}
+  We show, using contraposition and Lemma \ref{lemma:nsequiv_correct},
+  that $S \nsequiv S'$ implies $\exists \eta.\, L_\eta(S) \neq L_\eta(S')$.
+  Induction over the derivation of $S \nsequiv S'$.
+
+  \begin{enumerate}
+    \item
+      \label{case:equality_equivalence2:send1}
+      $S = \send B.T$; $S' = \send B.T'$; $T \nsequiv T'$.
+
+      By Lemma \ref{lemma:inversion_wellformedness} and assumptions
+      $\wf{S}$ and $\wf{S'}$,
+      \begin{eqnarray}
+        \label{eq:equality_equivalence2:send1:wfT}
+        && \wf{T}; \\
+        \label{eq:equality_equivalence2:send1:wfT'}
+        && \wf{T'}.
+      \end{eqnarray}
+
+      By IH as well as Eqs. \ref{eq:equality_equivalence2:send1:wfT} and
+      \ref{eq:equality_equivalence2:send1:wfT'},
+      \begin{equation}
+        \label{eq:equality_equivalence2:send1:neq}
+        \exists \eta.\, L_\eta(T) \neq L_\eta(T')
+      \end{equation}
+      Choose this $\eta$.
+
+      Thus,
+      \ref{eq:equality_equivalence2:send1:neq},
+      \begin{eqnarray*}
+        &&     L_\eta(S) \\
+        &=&    L_\eta(\send B.T) \quad \text
+               \quad \text{(by assumption)} \\
+        &=&    \{\send B\} \concat L_\eta(T)
+               \quad \text{(by Def. \ref{def:trace_language:send})} \\
+        &\neq& \{\send B\} \concat L_\eta(T')
+               \quad \text{(by Eq. \ref{eq:equality_equivalence2:send1:neq})} \\
+        &=&    L_\eta(\send B.T')
+               \quad \text{(by Def. \ref{def:trace_language:send})} \\
+        &=&    L_\eta(S')
+               \quad \text{(by assumption)}
+      \end{eqnarray*}
+
+    \item
+      \label{case:equality_equivalence2:send2}
+      $S = \send B.T$; $S' = \send B'.T'$; $B \neq B'$.
+
+      Choose $\eta$ arbitrarily.
+      By Def. \ref{def:trace_language:send} and $B \neq B'$,
+      \begin{eqnarray*}
+        &&     L_\eta(S) \\
+        &=&    L_\eta(\send B.T)
+               \quad \text{(by assumption)} \\
+        &=&    \{\send B\} \concat L_\eta(T)
+               \quad \text{(by Def. \ref{def:trace_language:send})} \\
+        &\neq& \{\send B'\} \concat L_\eta(T')
+               \quad \text{(due to $B \neq B'$)} \\
+        &=&    L_\eta(\send B'.T')
+               \quad \text{(by Def. \ref{def:trace_language:send})} \\
+        &=&    L_\eta(S')
+               \quad \text{(by assumption)}
+      \end{eqnarray*}
+
+    \item
+      \label{case:equality_equivalence2:recv1}
+      $S = \recv B.T$; $S' = \recv B.T'$; $T \nsequiv T'$.
+
+      Analogous to case \ref{case:equality_equivalence2:send1}
+
+    \item
+      \label{case:equality_equivalence2:recv2}
+      $S = \recv B.T$; $S' = \recv B'.T'$; $B \neq B'$.
+
+      Analogous to case \ref{case:equality_equivalence2:send2}
+
+    \item
+      \label{case:equality_equivalence2:echoice1}
+      $S = T_1 \echoice T_2$; $S' = T_1' \echoice T_2'$; $T_1 \nsequiv T_1'$.
+
+      By Lemma \ref{lemma:inversion_wellformedness} as well as assumptions
+      $\wf{S}$ and $\wf{S'}$,
+      \begin{eqnarray}
+        \label{eq:equality_equivalence2:echoice1:wf1}
+        \wf{T_1}; \\
+        \label{eq:equality_equivalence2:echoice1:wf2}
+        \wf{T_1'}. \\
+      \end{eqnarray}
+
+      By IH as well as Eqs. \ref{eq:equality_equivalence2:echoice1:wf1} and
+      \ref{eq:equality_equivalence2:echoice1:wf2},
+      \begin{equation}
+        \label{eq:equality_equivalence2:echoice1:neq}
+        \exists \eta.\, L_\eta(T_1) \neq L_\eta(T_1').
+      \end{equation}
+      Choose this $\eta$.
+
+      Thus,
+      \begin{eqnarray*}
+        &&     L_\eta(S) \\
+        &=&    L_\eta(T_1 \echoice T_2)
+               \quad \text{(by assumption)} \\
+        &=&    \{\send 0\} \concat L_\eta(T_1) \union \{\send 1\} \concat L_\eta(T_2)
+               \quad \text{(by Def. \ref{def:trace_language:echoice})} \\
+        &\neq& \{\send 0\} \concat L_\eta(T_1') \union \{\send 1\} \concat L_\eta(T_2')
+               \quad \text{(by Eq. \ref{eq:equality_equivalence2:echoice1:neq})} \\
+        &=&    L_\eta(T_1' \echoice T_2')
+               \quad \text{(by Def. \ref{def:trace_language:echoice})} \\
+        &=&    L_\eta(S')
+               \quad \text{(by assumption)}
+      \end{eqnarray*}
+
+    \item
+      \label{case:equality_equivalence2:echoice2}
+      $S = T_1 \echoice T_2$; $S' = T_1' \echoice T_2'$; $T_2 \nsequiv T_2'$.
+
+      Symmetric to case \ref{case:equality_equivalence2:echoice1}
+
+    \item
+      \label{case:equality_equivalence2:ichoice1}
+      $S = T_1 \ichoice T_2$; $S' = T_1' \ichoice T_2'$; $T_1 \nsequiv T_1'$.
+
+      Analogous to case \ref{case:equality_equivalence2:echoice1}
+
+    \item
+      \label{case:equality_equivalence2:ichoice2}
+      $S = T_1 \ichoice T_2$; $S' = T_1' \ichoice T_2'$; $T_2 \nsequiv T_2'$.
+
+      Analogous to case \ref{case:equality_equivalence2:echoice2}
+
+    \item
+      \label{case:equality_equivalence2:mu1}
+      $S = \mu X.T$; $T[X \mapsto \mu X.T] \nsequiv S'$.
+
+      By Lemma \ref{lemma:substitution_wellformedness} and assumption
+      $\wf{\mu X.T}$,
+      \begin{equation}
+        \label{eq:equality_equivalence2:mu1:wf}
+        \wf{T[X \mapsto \mu X.T]}.
+      \end{equation}
+
+      By IH and Eq. \ref{eq:equality_equivalence2:mu1:wf},
+      \begin{equation}
+        \label{eq:equality_equivalence2:mu1:neq}
+        \exists \eta.\, L_\eta(T[X \mapsto \mu X.T]) \neq L_\eta(S')
+      \end{equation}
+      Choose this $\eta$.
+
+      Thus, by Lemma \ref{lemma:mu_expansion_trace_language},
+      \begin{equation}
+        \label{eq:equality_equivalence2:mu1:neq'}
+        L_{\eta[X \mapsto L_\eta(\mu X.T)]}(T) \neq L_\eta(S').
+      \end{equation}
+
+      Thus,
+      \begin{eqnarray*}
+        &&     L_\eta(\mu X.T) \\
+        &=&    L_{\eta[X \mapsto L_\eta(\mu X.T)]}(T)
+               \quad \text{(by Def. \ref{def:trace_language:mu})} \\
+        &\neq& L_\eta(S').
+               \quad \text{(by Eq. \ref{eq:equality_equivalence2:mu1:neq'})}
+      \end{eqnarray*}
+
+    \item
+      \label{case:equality_equivalence2:mu2}
+      $S' = \mu X.T'$; $S \nsequiv T'[X \mapsto \mu X.T']$.
+
+      Symmetric to case \ref{case:equality_equivalence2:mu1}.
+
+    \item
+      \label{case:equality_equivalence2:shape}
+      $\shape(S) \neq \shape(S')$; $\shape(S) \neq \muS$; $\shape(S') \neq \muS$.
+
+      Trivial by case analysis on $S$ and $S'$ as well as the definition
+      of $L_\eta$.
   \end{enumerate}
 \end{proof}
 \end{document}
