@@ -55,12 +55,6 @@ Theorem sequiv_transitive :
   sequiv T U ->
   sequiv S U.
 Proof.
-  assert (
-    forall X S,
-    wellformed (mu X S) ->
-    wellformed (subst X (mu X S) S)
-  ) as L1 by skip.
-
   apply trans_helper_transitive. apply sequiv_coind.
   introv H. rename S' into U. inverts H.
   assert (sequiv S (cs T)) as HSeqT by (
@@ -124,26 +118,26 @@ Proof.
     apply trans_helper_trans with (T := ichoice S1' S2'); eauto with wf.
 
   (* unit *)
-  - rewrite <- HTeqU in *. constructor. apply sequiv_impl_trans_helper; auto.
+  - rewrite <- HTeqU in *. constructor. apply sequiv_impl_trans_helper; auto with wf.
 
   (* send *)
   - constructor. rewrite <- H3 in *.
-    apply trans_helper_trans with (T := send B S); auto.
+    apply trans_helper_trans with (T := send B S); auto with wf.
       rewrite H3; eauto using cs_preserves_wellformedness with wf.
 
   (* recv *)
   - constructor. rewrite <- H3 in *.
-    apply trans_helper_trans with (T := recv B S); auto.
+    apply trans_helper_trans with (T := recv B S); auto with wf.
       rewrite H3; eauto using cs_preserves_wellformedness with wf.
 
   (* echoice *)
   - constructor. rewrite <- H3 in *.
-    apply trans_helper_trans with (T := echoice S1 S2); auto.
+    apply trans_helper_trans with (T := echoice S1 S2); auto with wf.
       rewrite H3; eauto using cs_preserves_wellformedness with wf.
 
   (* ichoice *)
   - constructor. rewrite <- H3 in *.
-    apply trans_helper_trans with (T := ichoice S1 S2); auto.
+    apply trans_helper_trans with (T := ichoice S1 S2); auto with wf.
       rewrite H3; eauto using cs_preserves_wellformedness with wf.
 
   (* mu 1 (impossible) *)

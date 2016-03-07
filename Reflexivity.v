@@ -30,5 +30,4 @@ Theorem sequiv_reflexive :
 Proof.
   apply R_refl_reflexivity. apply sequiv_coind.
   introv H. inverts1 H; [destruct S'|..]; auto with wf refl.
-  - do 2 constructor. apply subst_preserves_wellformedness; auto with wf.
 Qed.

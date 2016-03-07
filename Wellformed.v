@@ -221,7 +221,7 @@ Lemma wellformed_inv :
   (forall B S, wellformed (recv B S) -> wellformed S) /\
   (forall S1 S2, wellformed (echoice S1 S2) -> wellformed S1 /\ wellformed S2) /\
   (forall S1 S2, wellformed (ichoice S1 S2) -> wellformed S1 /\ wellformed S2) /\
-  (forall X S, wellformed (mu X S) -> ok (env_add X env_empty) S).
+  (forall X S, wellformed (mu X S) -> ok (env_add X env_empty) S /\ wellformed (subst X (mu X S) S)).
 Proof.
   Hint Extern 1 =>
     match goal with
@@ -230,6 +230,9 @@ Proof.
     end
   .
   splits; introv H; try solve [inverts2 H; auto with wf].
+  - split.
+    + inverts2 H; auto with wf.
+    + inverts H; auto with wf.
 Qed.
 
 Hint Extern 4 (wellformed ?S) =>
@@ -241,6 +244,13 @@ Hint Extern 4 (wellformed ?S) =>
   | H : wellformed (echoice _ S) |- _ => inv H
   | H : wellformed (ichoice S _) |- _ => inv H
   | H : wellformed (ichoice _ S) |- _ => inv H
+  end
+: wf.
+
+Hint Extern 4 (wellformed (subst ?X (mu ?X ?S) ?S)) =>
+  match goal with
+  | H : wellformed (mu X S) |- _ =>
+    apply wellformed_inv in H
   end
 : wf.
 
