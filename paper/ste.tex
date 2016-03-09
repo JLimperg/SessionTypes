@@ -7,6 +7,7 @@
 \usepackage{amssymb}
 \usepackage{amsfonts}
 \usepackage{semantic}
+\usepackage{csquotes}
 
 \newcommand*{\Msg}{\mathrm{Msg}}
 \newcommand*{\Var}{\mathrm{Var}}
@@ -28,6 +29,8 @@
 \newcommand*{\ichoiceS}{\mathrm{ichoiceS}}
 \newcommand*{\muS}{\mathrm{muS}}
 \newcommand*{\varS}{\mathrm{varS}}
+\newcommand*{\Free}{\mathrm{Free}}
+\newcommand*{\Closed}{\mathrm{Closed}}
 \newcommand*{\sequiv}{\sim}
 \newcommand*{\nsequiv}{\not\sim}
 \newcommand*{\union}{\cup}
@@ -265,17 +268,279 @@
 \end{lemma}
 
 
-% TODO Case 7 is wrong.
-\begin{lemma}[Substitution in $L_\eta$]
-  \label{lemma:substitution_trace_language}
+\begin{definition}[Free Variables]
+  \label{def:free}
+  The relation $\Free \subseteq \Var \times \Ty$ is defined inductively
+  by the following inference rules:
+  \begin{eqnarray*}
+    && (X, S) \in \Free \\
+    &\implies& (X, \send B.S) \in \Free
+    \quad \forall X \in \Var;\; B \in \Msg;\; S \in \Ty \\
+    && (X, S) \in \Free \\
+    &\implies& (X, \recv B.S) \in \Free
+    \quad \forall X \in \Var;\; B \in \Msg;\; S \in \Ty \\
+    && (X, S_1) \in \Free \lor (X, S_2) \in \Free \\
+    &\implies& (X, S_1 \echoice S_2) \in \Free
+    \quad \forall X \in \Var;\; S_1, S_2 \in \Ty \\
+    && (X, S_1) \in \Free \lor (X, S_2) \in \Free \\
+    &\implies& (X, S_1 \ichoice S_2) \in \Free
+    \quad \forall X \in \Var;\; S_1, S_2 \in \Ty \\
+    && (X, S) \in \Free \land X \neq Y \\
+    &\implies& (X, \mu Y.S) \in \Free
+    \quad \forall X, Y \in \Var;\; S \in \Ty \\
+    && (X, X) \in \Free \\
+    \quad \forall X \in \Var.
+  \end{eqnarray*}
+  Read $(X, S) \in \Free$ as \enquote{$X$ is free in $S$}.
+
+  \machdefc{Free.Free}
+\end{definition}
+
+
+\begin{definition}[Closedness]
+  \label{def:closed}
+  The predicate $\Closed \subseteq \Ty$ is defined by
   \begin{equation*}
-    L_{\eta[X \mapsto L_\eta(T)]}(S) = L_\eta(S[X \mapsto T])
-      \quad \forall S \in \Ty, T \in \Ty, X, \eta.
+    \Closed := \{ S \in \Ty \mid \nexists X \in \Var.\; (X, S) \in \Free \}
+  \end{equation*}
+
+  \machdefc{Free.Closed}
+\end{definition}
+
+
+\begin{lemma}[Wellformedness Implies Closedness]
+  \label{lemma:wellformed_closed}
+  \begin{equation*}
+    \wf{S} \implies S \in \Closed \quad \forall S \in \Ty
   \end{equation*}
 \end{lemma}
 
 \begin{proof}
-  Choose $T, X$ arbitrarily. Induction over the construction of $S$.
+  \machproofc{FreeFacts.wellformed\_closed}
+\end{proof}
+
+
+\begin{lemma}[Irrelevance of Eta I]
+  \label{lemma:eta_irrelevant1}
+  \begin{eqnarray*}
+    &&         \forall S \in \Ty;\; \eta, \eta'\colon \Var \to \Tl. \\
+    &&         (\forall X \in \Var.\; (X, S) \in \Free \implies \eta(X) = \eta'(X)) \\
+    &\implies& L_\eta(S) = L_{\eta'}(S).
+  \end{eqnarray*}
+\end{lemma}
+
+\begin{proof}
+  Auxiliary lemma:
+  \begin{eqnarray*}
+    &&      \forall P. \\
+    &&      (\forall B, S.\; (\forall X.\; (X.\; \send B.S) \in \Free \implies P) \\
+    &&      \implies \forall X.\; (X, S) \in \Free \implies P) \\
+    &\land& (\forall B, S.\; (\forall X.\; (X.\; \recv B.S) \in \Free \implies P) \\
+    &&      \implies \forall X.\; (X, S) \in \Free \implies P) \\
+    &\land& (\forall S_1, S_2.\; (\forall X.\; (X.\; S_1 \echoice S_2) \in \Free \implies P) \\
+    &&      \implies (\forall X.\; (X, S_1) \in \Free \implies P) \land (\forall X.\; (X, S_2) \in \Free \implies P)) \\
+    &\land& (\forall S_1, S_2.\; (\forall X.\; (X, S_1 \ichoice S_2) \in \Free \implies P) \\
+    &&      \implies (\forall X.\; (X, S_1) \in \Free \implies P) \land (\forall X.\; (X, S_2) \in \Free \implies P)) \\
+    &\land& (\forall Y S.\; (\forall X.\; (X, \mu Y.S) \in \Free \implies P) \\
+    &&      \implies (\forall X.\; (X, S) \in \Free \land X \neq Y \implies P)).
+  \end{eqnarray*}
+  \machproofc{FreeFacts.eta\_irrelevant\_helper}
+
+  \bigskip
+
+  Induction over the construction of $S$. In every case, choose $\eta$ and
+  $\eta'$ arbitrarily.
+
+  \begin{enumerate}
+    \item
+      \label{case:eta_irrelevant1:1}
+      $S = 1$.
+
+      By Eq. \ref{def:trace_language:1},
+      \begin{equation*}
+        L_\eta(1) = \{\varepsilon\} = L_{\eta'}(1)
+      \end{equation*}
+
+    \item
+      \label{case:eta_irrelevant1:send}
+      $S = \send B.S'$.
+
+      Induction hypothesis:
+      \begin{eqnarray*}
+        &&         \forall \eta, \eta'.\; \\
+        &&         (\forall X \in \Var.\; (X, S') \in \Free \implies \eta(X) = \eta'(X)) \\
+        &\implies& L_\eta(S') = L_{\eta'}(S').
+      \end{eqnarray*}
+
+      By aux. lemma and assumption,
+      \begin{equation}
+        \label{eq:eta_irrelevant1:send:free}
+        (\forall X.\; (X, S') \in \Free \implies \eta(X) = \eta'(X))
+      \end{equation}
+
+      Thus,
+      \begin{eqnarray*}
+        &&  L_\eta(S) \\
+        &=& L_\eta(\send B.S')
+        \quad \text{(by assumption)} \\
+        &=& \{\send B\} \concat L_\eta(S')
+        \quad \text{(by Eq. \ref{def:trace_language:send})} \\
+        &=& \{\send B\} \concat L_{\eta'}(S')
+        \quad \text{(by IH, using Eq. \ref{eq:eta_irrelevant1:send:free})} \\
+        &=& L_{\eta'}(\send B.S')
+        \quad \text{(by Eq. \ref{def:trace_language:send})} \\
+        &=&  L_{\eta'}(S)
+        \quad \text{(by assumption)}
+      \end{eqnarray*}
+
+    \item
+      \label{case:eta_irrelevant1:recv}
+      $S = \recv B.S'$.
+
+      Analogous to case \ref{case:eta_irrelevant1:send}.
+
+    \item
+      \label{case:eta_irrelevant1:echoice}
+      $S = S_1 \echoice S_2$.
+
+      Induction hypotheses:
+      \begin{eqnarray*}
+        &&         \forall \eta, \eta'.\; \\
+        &&         (\forall X \in \Var.\; (X, S_1) \in \Free \implies \eta(X) = \eta'(X)) \\
+        &\implies& L_\eta(S_1) = L_{\eta'}(S_1). \\
+        &&         \forall \eta, \eta'.\; \\
+        &&         (\forall X \in \Var.\; (X, S_2) \in \Free \implies \eta(X) = \eta'(X)) \\
+        &\implies& L_\eta(S_2) = L_{\eta'}(S_2).
+      \end{eqnarray*}
+
+      By aux. lemma and assumption,
+      \begin{eqnarray}
+        && \label{eq:eta_irrelevant1:echoice:free1}
+        (\forall X.\; (X, S_1) \in \Free \implies \eta(X) = \eta'(X)) \\
+        &\land& \label{eq:eta_irrelevant1:echoice:free2}
+        (\forall X.\; (X, S_2) \in \Free \implies \eta(X) = \eta'(X))
+      \end{eqnarray}
+
+      Thus,
+      \begin{eqnarray*}
+        &&  L_\eta(S) \\
+        &=& L_\eta(S_1 \echoice S_2)
+        \quad \text{(by assumption)} \\
+        &=& \{\send 0\} \concat L_\eta(S_1) \cup \{\send 1\} \concat L_\eta(S_2)
+        \quad \text{(by Eq. \ref{def:trace_language:echoice})} \\
+        &=& \{\send 0\} \concat L_{\eta'}(S_1) \cup \{\send 1\} \concat L_{\eta'}(S_2)
+        \quad \text{(by IHs, using Eqs. \ref{eq:eta_irrelevant1:echoice:free1} and \ref{eq:eta_irrelevant1:echoice:free2})} \\
+        &=& L_{\eta'}(S_1 \echoice S_2)
+        \quad \text{(by Eq. \ref{def:trace_language:echoice})} \\
+        &=&  L_{\eta'}(S)
+        \quad \text{(by assumption)}
+      \end{eqnarray*}
+
+    \item
+      \label{case:eta_irrelevant1:ichoice}
+      $S = S_1 \ichoice S_2$.
+
+      Analogous to case \ref{case:eta_irrelevant1:echoice}.
+
+    \item
+      \label{case:eta_irrelevant1:mu}
+      $S = \mu Y.S'$.
+
+      Induction hypothesis:
+      \begin{eqnarray*}
+        &&         \forall \eta, \eta'.\; \\
+        &&         (\forall X \in \Var.\; (X, S_1) \in \Free \implies \eta(X) = \eta'(X)) \\
+        &\implies& L_\eta(S') = L_{\eta'}(S').
+      \end{eqnarray*}
+
+      By aux. lemma and assumption,
+      \begin{equation}
+        \label{eq:eta_irrelevant1:mu:free1}
+        \forall X.\; (S', X) \in \Free \land X \neq Y \implies \eta(X) = \eta'(X)
+      \end{equation}
+
+      Thus, by the definition of overriding,
+      \begin{equation}
+        \label{eq:eta_irrelevant1:mu:free2}
+        \forall L, X.\; (S', X) \in \Free \implies \eta[Y \mapsto L](X) = \eta'[Y \mapsto L](X)
+      \end{equation}
+
+      Thus,
+      \begin{eqnarray*}
+        &&  L_\eta(S) \\
+        &=& L_\eta(\mu Y.S')
+        \quad \text{(by assumption)} \\
+        &=& \gfp(LX \mapsto L_{\eta[Y \mapsto LX]}(S'))
+        \quad \text{(by Eq. \ref{def:trace_language:mu})} \\
+        &=& \gfp(LX \mapsto L_{\eta'[Y \mapsto LX]}(S'))
+        \quad \text{(by IH, using Eq. \ref{eq:eta_irrelevant1:mu:free2})} \\
+        &=& L_{\eta'}(\mu Y.S')
+        \quad \text{(by Eq. \ref{def:trace_language:mu})} \\
+        &=&  L_{\eta'}(S)
+        \quad \text{(by assumption)}
+      \end{eqnarray*}
+
+    \item
+      \label{case:eta_irrelevant1:var}
+      $S = X$.
+
+      By Def. \ref{def:free},
+      \begin{equation}
+        (X, X) \in \Free.
+      \end{equation}
+      Thus, by assumption,
+      \begin{equation}
+        \label{eq:eta_irrelevant1:var:eta}
+        \eta(X) = \eta'(X).
+      \end{equation}
+
+      Thus,
+      \begin{eqnarray*}
+        && L_\eta(S) \\
+        &=& L_\eta(X)
+        \quad \text{(by assumption)} \\
+        &=& \eta(X)
+        \quad \text{(by Eq. \ref{def:trace_language:var})} \\
+        &=& \eta'(X)
+        \quad \text{(by Eq. \ref{eq:eta_irrelevant1:var:eta})} \\
+        &=& L_{\eta'}(X)
+        \quad \text{(by Eq. \ref{def:trace_language:var})} \\
+        &=& L_{\eta'}(S)
+        \quad \text{(by assumption)}
+      \end{eqnarray*}
+
+  \end{enumerate}
+\end{proof}
+
+
+\begin{lemma}[Irrelevance of Eta II]
+  \label{lemma:eta_irrelevant2}
+  \begin{eqnarray*}
+    &&         \forall S \in \Ty. \\
+    &&         S \in \Closed \\
+    &\implies& \forall \eta, \eta'.\; L_\eta(S) = L_\eta(S').
+  \end{eqnarray*}
+\end{lemma}
+
+\begin{proof}
+  By Lemma \ref{lemma:eta_irrelevant1}. By Def. \ref{def:closed}, there
+  is no $X$ such that $(X, S) \in \Free$, so the lemma's precondition
+  is vacuously true.
+\end{proof}
+
+
+\begin{lemma}[Substitution in $L_\eta$]
+  \label{lemma:substitution_trace_language}
+  \begin{eqnarray*}
+    &&         \forall S, T \in \Ty; X, \eta. \\
+    &&         T \in \Closed \\
+    &\implies& L_{\eta[X \mapsto L_\eta(T)]}(S) = L_\eta(S[X \mapsto T])
+  \end{eqnarray*}
+\end{lemma}
+
+\begin{proof}
+  Choose $T, X$ arbitrarily such that $T \in \Closed$. Induction over the
+  construction of $S$.
   \begin{enumerate}
     \item
       \label{case:substitution_trace_language:1}
@@ -382,6 +647,8 @@
             \quad \text{(by Eq. \ref{def:trace_language:mu})} \\
         &=& \gfp(LX \mapsto L_{\eta[Y \mapsto LX][X \mapsto L_\eta(T)]}(S'))
             \quad \text{(by Lemma \ref{lemma:overriding_exchange})} \\
+        &=& \gfp(LX \mapsto L_{\eta[Y \mapsto LX][X \mapsto L_{\eta[Y \mapsto LX]}(T)]}(S'))
+            \quad \text{(by Lemma \ref{lemma:eta_irrelevant2} with $T \in \Closed$)} \\
         &=& \gfp(LX \mapsto L_{\eta[Y \mapsto LX]}(S'[X \mapsto T]))
             \quad \text{(by IH)} \\
         &=& L_\eta(\mu Y.(S'[X \mapsto T]))
@@ -428,9 +695,11 @@
 
 \begin{lemma}[Trace Language of $\mu$ Expansion]
   \label{lemma:mu_expansion_trace_language}
-  \begin{equation*}
-    L_\eta(\mu X.S) = L_\eta(S[X \mapsto \mu X.S]) \quad \forall \eta, X, S.
-  \end{equation*}
+  \begin{eqnarray*}
+    &&         \forall S \in \Ty; \eta, X. \\
+    &&         \mu X.S \in \Closed \\
+    &\implies& L_\eta(\mu X.S) = L_\eta(S[X \mapsto \mu X.S])
+  \end{eqnarray*}
 \end{lemma}
 
 \begin{proof}
@@ -442,7 +711,7 @@
     &=& L_{\eta[X \mapsto L_\eta(\mu X.S)]}(S)
         \quad \text{(due to $L_\eta(\mu X.S)$ a fixed point)} \\
     &=& L_\eta(S[X \mapsto \mu X.S])
-        \quad \text{(by Lemma \ref{lemma:substitution_trace_language})}.
+        \quad \text{(by Lemma \ref{lemma:substitution_trace_language} using $\mu X.S \in \Closed$)}.
   \end{eqnarray*}
 \end{proof}
 
@@ -511,7 +780,11 @@
       \label{case:equality_equivalence:mu1}
       $(S, S') = (\mu X.T, S')$.
 
-      By Lemma \ref{lemma:mu_expansion_trace_language},
+      By assumption $\wf{S}$ and Lemma \ref{lemma:wellformed_closed},
+      \begin{equation*}
+        S \in \Closed.
+      \end{equation*}
+      Thus, by Lemma \ref{lemma:mu_expansion_trace_language},
       \begin{equation*}
         \forall \eta.\, L_\eta(T[X \mapsto \mu X.T]) = L_\eta(\mu X.T).
       \end{equation*}
@@ -894,6 +1167,10 @@
       \end{equation}
       Choose this $\eta$.
 
+      By assumption $\wf{S}$ and Lemma \ref{lemma:wellformed_closed},
+      \begin{equation*}
+        S \in \Closed.
+      \end{equation*}
       Thus, by Lemma \ref{lemma:mu_expansion_trace_language},
       \begin{equation}
         \label{eq:equality_equivalence2:mu1:neq'}

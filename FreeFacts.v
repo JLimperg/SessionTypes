@@ -194,3 +194,23 @@ Proof.
   unfold wellformed. unfold Closed. intros S Hwf X. eapply ok_free;
     eauto with env.
 Qed.
+
+
+Lemma eta_irrelevant_helper :
+  forall (P : Prop),
+  (forall B S,
+    (forall X, Free X (send B S) -> P) ->
+    (forall X, Free X S -> P)) /\
+  (forall B S,
+    (forall X, Free X (recv B S) -> P) ->
+    (forall X, Free X S -> P)) /\
+  (forall S1 S2,
+    (forall X, Free X (echoice S1 S2) -> P) ->
+    (forall X, Free X S1 -> P) /\ (forall X, Free X S2 -> P)) /\
+  (forall S1 S2,
+    (forall X, Free X (ichoice S1 S2) -> P) ->
+    (forall X, Free X S1 -> P) /\ (forall X, Free X S2 -> P)) /\
+  (forall Y S,
+    (forall X, Free X (mu Y S) -> P) ->
+    (forall X, X <> Y -> Free X S -> P)).
+Proof. intuition (eauto with free). Qed.
