@@ -1,3 +1,5 @@
+%TODO define command for unit; semantic commands for other Stys
+%TODO clear up references to equations of definitions
 \documentclass{llncs}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
@@ -159,21 +161,21 @@
 \end{definition}
 
 
-\begin{definition}[Set of Trace Languages]
-  \label{def:trace_language_set}
-  The set $\Tl$ of trace languages is defined as
-  \begin{equation*}
-    \Tl := \Sigma^\infty
-  \end{equation*}
-  for
+\begin{definition}[Trace]
+  \label{def:trace}
+  Let
   \begin{equation*}
     \Sigma := \{\send x, \recv x \mid x \in \{0, 1\}\} \cup
-      \{ \send B, \recv B \mid B \in \Msg\}
+      \{ \send B, \recv B \mid B \in \Msg\}.
+  \end{equation*}
+  The set $\Tl$ of traces is defined as
+  \begin{equation*}
+    \Tl := \Sigma^\omega.
   \end{equation*}
 \end{definition}
 
 
-\begin{definition}[Trace Language of a Session Type]
+\begin{definition}[Trace Language]
   \label{def:trace_language}
   Let $\eta\colon \Var \to \Tl$ and $S \in \S$.
   The trace language $L_\eta(S)$ is inductively defined by the following
@@ -207,7 +209,7 @@
 \begin{definition}[Session Type Equivalence]
   \label{def:equivalence}
   The functional $F_\sequiv\colon (\Ty \times \Ty) \to (\Ty \times \Ty)$
-  is defined inductively by the following equation:
+  is defined by the following equation:
   \begin{eqnarray}
     F_\sequiv(\sequiv)
     &:=&     \label{def:equivalence:mu1}
@@ -263,6 +265,7 @@
 \end{lemma}
 
 
+% TODO Case 7 is wrong.
 \begin{lemma}[Substitution in $L_\eta$]
   \label{lemma:substitution_trace_language}
   \begin{equation*}
@@ -381,7 +384,7 @@
             \quad \text{(by Lemma \ref{lemma:overriding_exchange})} \\
         &=& \gfp(LX \mapsto L_{\eta[Y \mapsto LX]}(S'[X \mapsto T]))
             \quad \text{(by IH)} \\
-        &=& L_\eta((\mu Y.(S'[X \mapsto T]))
+        &=& L_\eta(\mu Y.(S'[X \mapsto T]))
             \quad \text{(by Eq. \ref{def:trace_language:mu})} \\
         &=& L_\eta((\mu Y.S')[X \mapsto T])
             \quad \text{(by def. of substitution)}. \\
@@ -473,9 +476,6 @@
 
 \begin{proof}
   \machproofc{Wellformed.wellformed\_inv}
-
-  The last case follows from the above lemma and Lemma
-  \ref{lemma:substitution_wellformedness}.
 \end{proof}
 
 
@@ -814,13 +814,13 @@
       \label{case:equality_equivalence2:recv1}
       $S = \recv B.T$; $S' = \recv B.T'$; $T \nsequiv T'$.
 
-      Analogous to case \ref{case:equality_equivalence2:send1}
+      Analogous to case \ref{case:equality_equivalence2:send1}.
 
     \item
       \label{case:equality_equivalence2:recv2}
       $S = \recv B.T$; $S' = \recv B'.T'$; $B \neq B'$.
 
-      Analogous to case \ref{case:equality_equivalence2:send2}
+      Analogous to case \ref{case:equality_equivalence2:send2}.
 
     \item
       \label{case:equality_equivalence2:echoice1}
@@ -862,19 +862,19 @@
       \label{case:equality_equivalence2:echoice2}
       $S = T_1 \echoice T_2$; $S' = T_1' \echoice T_2'$; $T_2 \nsequiv T_2'$.
 
-      Symmetric to case \ref{case:equality_equivalence2:echoice1}
+      Symmetric to case \ref{case:equality_equivalence2:echoice1}.
 
     \item
       \label{case:equality_equivalence2:ichoice1}
       $S = T_1 \ichoice T_2$; $S' = T_1' \ichoice T_2'$; $T_1 \nsequiv T_1'$.
 
-      Analogous to case \ref{case:equality_equivalence2:echoice1}
+      Analogous to case \ref{case:equality_equivalence2:echoice1}.
 
     \item
       \label{case:equality_equivalence2:ichoice2}
       $S = T_1 \ichoice T_2$; $S' = T_1' \ichoice T_2'$; $T_2 \nsequiv T_2'$.
 
-      Analogous to case \ref{case:equality_equivalence2:echoice2}
+      Analogous to case \ref{case:equality_equivalence2:echoice2}.
 
     \item
       \label{case:equality_equivalence2:mu1}
