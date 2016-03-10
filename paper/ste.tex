@@ -9,6 +9,7 @@
 \usepackage{semantic}
 \usepackage{csquotes}
 
+\newcommand*{\Nat}{\mathbb{N}}
 \newcommand*{\Msg}{\mathrm{Msg}}
 \newcommand*{\Var}{\mathrm{Var}}
 \newcommand*{\Sym}{\mathrm{Sym}}
@@ -19,7 +20,9 @@
 \renewcommand*{\S}{\mathfrak{S}}
 \newcommand*{\lfp}{\mathrm{lfp}}
 \newcommand*{\gfp}{\mathrm{gfp}}
+\newcommand*{\bisim}{\approx}
 \newcommand*{\cs}{\mathrm{cs}}
+\newcommand*{\mul}{\mathrm{mul}}
 \newcommand*{\Shape}{\mathrm{Shape}}
 \newcommand*{\shape}{\mathrm{shape}}
 \newcommand*{\unitS}{\mathrm{unitS}}
@@ -697,7 +700,7 @@
   \label{lemma:mu_expansion_trace_language}
   \begin{eqnarray*}
     &&         \forall S \in \Ty; \eta, X. \\
-    &&         \mu X.S \in \Closed \\
+    &&         \mu X.S \in \Closed \\ % TODO change to wf?
     &\implies& L_\eta(\mu X.S) = L_\eta(S[X \mapsto \mu X.S])
   \end{eqnarray*}
 \end{lemma}
@@ -728,6 +731,20 @@
 
 \begin{proof}
   \machproofc{Wellformed.subst\_preserves\_wellformedness}
+\end{proof}
+
+
+\begin{lemma}[Mu Expansion Preserves Wellformedness]
+  \label{lemma:mu_expansion_wellformedness}
+  \begin{eqnarray*}
+    &&         \forall S, X. \\
+    &&         \wf{\mu X.S} \\
+    &\implies& \wf{S[X \mapsto \mu X.S]}.
+  \end{eqnarray*}
+\end{lemma}
+
+\begin{proof}
+  \machproofc{SubstitutionFacts.subst\_ok\_mu}
 \end{proof}
 
 
@@ -1199,5 +1216,327 @@
       Trivial by case analysis on $S$ and $S'$ as well as the definition
       of $L_\eta$.
   \end{enumerate}
+\end{proof}
+
+
+\begin{definition}[Complete Substitution]
+  \label{def:cs}
+  The function $\cs\colon \S \to \S$ is defined recursively by the following
+  equations:
+  \begin{eqnarray*}
+    \cs(\mu X.S) &:=& \cs(S[X \mapsto \mu X.S]) \\
+    \cs(S) &:=& S \quad \mid \shape(S) \neq \muS
+  \end{eqnarray*}
+
+  \machdefc{CompleteSubstitution.cs}
+\end{definition}
+
+
+\begin{definition}[$\mu$ Prefix Length]
+  \label{def:mul}
+  The function $\mul\colon \Ty \to \Nat$ is defined recursively by the
+  following equations:
+  \begin{eqnarray*}
+    \mul(\mu X.S) &:=& 1 + \mul(S) \\
+    \mul(S) &:=& 0 \quad \mid \shape(S) \neq \muS
+  \end{eqnarray*}
+\end{definition}
+
+
+\begin{lemma}[$\mu$ Prefix Length of $\mu$ Expansion]
+  \label{lemma:mu_expansion_mul}
+  \begin{eqnarray*}
+    &&         \forall S, X. \\
+    &&         \wf{\mu X.S} \\
+    &\implies& \mul(S[X \mapsto \mu X.S]) < \mul(\mu X.S).
+  \end{eqnarray*}
+\end{lemma}
+
+\begin{proof}
+  \machproofc{SubstitutionFacts.lt\_Sty\_mu\_prefix\_subst\_mu}
+\end{proof}
+
+
+\begin{lemma}[Complete Substitution Preserves Trace Language]
+  \label{lemma:cs_preserves_trace_language}
+  \begin{eqnarray*}
+    && \forall S \in \S, \eta. \\
+    && \wf{S} \\
+    &\implies& L_\eta(S) = L_\eta(\cs(S)).
+  \end{eqnarray*}
+\end{lemma}
+
+\begin{proof}
+  Induction over $n := \mul(S)$.
+  \begin{enumerate}
+    \item
+      $n = 0$.
+
+      By Def. \ref{def:cs}, $cs(S) = S$; thus $L_\eta(S) = L_\eta(\cs(S))$.
+
+    \item
+      $n > m$; $S = \mu X_1.\dots.\mu X_n.S'$.
+
+      Induction hypothesis:
+      \begin{eqnarray*}
+        &&         \forall S_1. \\
+        &&         \wf{S_1} \\
+        &\implies& \mul(S_1) < \mul(S) \\
+        &\implies& L_\eta(S_1) = L_\eta(\cs(S_1)).
+      \end{eqnarray*}
+
+      By assumption $\wf{S}$ and Lemma \ref{lemma:wellformed_closed},
+      \begin{equation}
+        \label{eq:cs_preserves_trace_language:closed}
+        S \in \Closed.
+      \end{equation}
+      By assumption $\wf{S}$ and Lemma \ref{lemma:mu_expansion_wellformedness}
+      \begin{equation}
+        \label{eq:cs_preserves_trace_language:wf}
+        \wf{(\mu X_2.\dots.\mu X_n.S')[X_1 \mapsto S]}
+      \end{equation}
+      By assumption $\wf{S}$ and Lemma \ref{lemma:mu_expansion_mul},
+      \begin{equation}
+        \label{eq:cs_preserves_trace_language:mul}
+        \mul((\mu X_2.\dots.\mu X_n.S')[X_1 \mapsto S]) < \mul(S)
+      \end{equation}
+      Thus,
+      \begin{eqnarray*}
+        &&  L_\eta(S) \\
+        &=& L_\eta(\mu X_1.\dots.\mu X_n.S')
+          \quad \text{(by assumption)} \\
+        &=& L_\eta((\mu X_2.\dots.\mu X_n.S')[X_1 \mapsto S])
+          \quad \text{(by Lemma \ref{lemma:mu_expansion_trace_language}
+          using Eq. \ref{eq:cs_preserves_trace_language:closed})} \\
+        &=& L_\eta(\cs((\mu X_2.\dots.\mu X_n.S')[X_1 \mapsto S]))
+          \quad \text{(by IH using Eqs. \ref{eq:cs_preserves_trace_language:wf}
+          and \ref{eq:cs_preserves_trace_language:mul})} \\
+        &=& L_\eta(\cs(\mu X_1.\dots.\mu X_n.S'))
+          \quad \text{(by Def. \ref{def:cs})} \\
+        &=& L_\eta(\cs(S))
+          \quad \text{(by assumption)}
+      \end{eqnarray*}
+  \end{enumerate}
+\end{proof}
+
+
+\begin{lemma}[Complete Substitution Preserves Equivalence]
+  \label{lemma:cs_preserves_sequiv}
+  \begin{eqnarray*}
+    &&         \forall S, S'. \\
+    &&         \wf{S} \\
+    &\implies& \wf{S'} \\
+    &\implies& S \sequiv S' \\
+    &\implies& \cs(S) \sequiv \cs(S')
+  \end{eqnarray*}
+\end{lemma}
+
+\begin{proof}
+  \machproofc{CompleteSubstitutionFacts.cs\_preserves\_sequiv}
+\end{proof}
+
+
+\begin{lemma}[Complete Substitution Preserves Wellformedness]
+  \label{lemma:cs_preserves_wellformedness}
+  \begin{eqnarray*}
+    &&         \forall S. \\
+    &&         \wf{S} \\
+    &\implies& \wf{\cs(S)}.
+  \end{eqnarray*}
+\end{lemma}
+
+\begin{proof}
+  \machproofc{CompleteSubstitutionFacts.cs\_preserves\_wellformedness}
+\end{proof}
+
+
+\begin{definition}[Bisimilarity on Trace Languages]
+  \label{def:tl_bisim}
+  The functional $F_\bisim\colon (\Tl \times \Tl) \to (\Tl \times \Tl)$ is
+  defined by the following equation:
+  \begin{eqnarray*}
+    F_\bisim(\bisim)
+    &:=&   \{ (\{\epsilon\}, \{\epsilon\})\} \\
+    &\cup& \{ (\{\send B\}.L, \{\send B\}.L') \mid L \bisim L' \} \\
+    &\cup& \{ (\{\recv B\}.L, \{\recv B\}.L') \mid L \bisim L' \} \\
+    &\cup& \{ (\{\send 0\}.L_1 \cup \{\send 1\}.L_2, \{\send 0\}.L_1' \cup \{\send 1\}.L_2')
+              \mid L_1 \bisim L_1' \land L_2 \bisim L_2' \} \\
+    &\cup& \{ (\{\recv 0\}.L_1 \cup \{\recv 1\}.L_2, \{\recv 0\}.L_1' \cup \{\recv 1\}.L_2')
+              \mid L_1 \bisim L_1' \land L_2 \bisim L_2' \}.
+  \end{eqnarray*}
+  $\bisim \subseteq \Tl \times \Tl$ is the greatest fixed point of $F_\bisim$:
+  \begin{equation*}
+    \bisim := \gfp(F_\bisim).
+  \end{equation*}
+\end{definition}
+
+
+\begin{theorem}[Equivalence implies Trace Bisimilarity]
+  \label{th:equivalence_equality}
+  \begin{eqnarray*}
+    &&         \forall S, S'. \\
+    &&         \wf{S} \\
+    &\implies& \wf{S'} \\
+    &\implies& S \sequiv S' \\
+    &\implies& \forall \eta.\, L_\eta(S) \bisim L_\eta(S')
+  \end{eqnarray*}
+\end{theorem}
+
+\begin{proof}
+  Let $R \subseteq \Tl \times \Tl$ with
+  \begin{eqnarray*}
+    R :=
+    &\{&   (L, L') \\
+    &\mid& \exists S, S'. L = L_\eta(\cs(S));\; L' = L_\eta(\cs(S')) \\
+    &;\;&  \wf{\cs(S)};\; \wf{\cs(S')};\; \cs(S) \sequiv \cs(S') \\
+    &\}&.
+  \end{eqnarray*}
+
+  We will show $R \subseteq F_\bisim(R)$, which by the fixed-point theorem
+  implies $R \subseteq \bisim = \gfp(F_\bisim)$.
+
+  Choose $L, L' \in R$ and the corresponding $S, S'$. Case analysis on the
+  construction of $\cs(S) \sequiv \cs(S')$.
+  \begin{enumerate}
+    \item
+      \label{case:equivalence_equality:unit}
+      $\cs(S) = \cs(S') = 1$.
+
+      \begin{eqnarray*}
+        &&  (L_\eta(\cs(S)), L_\eta(\cs(S')) \\
+        &=& (L_\eta(1), L_\eta(1))
+        \quad \text{(by assumption)} \\
+        &=& (\{\varepsilon\}, \{\varepsilon\})
+        \quad \text{(by Eq. \ref{def:trace_language:1})} \\
+        &\in& F_\bisim(R)
+        \quad \text{(by Def. \ref{def:tl_bisim})}
+      \end{eqnarray*}
+
+    \item
+      \label{case:equivalence_equality:send}
+      $\cs(S) = \send B.S_1$; $\cs(S') = \send B.S_1'$; $S_1 \sequiv S_1'$.
+
+      By Lemma \ref{lemma:inversion_wellformedness} and assumptions
+      $\wf{\cs(S)}$ resp. $\wf{\cs(S')}$,
+      \begin{equation*}
+        \wf{S_1} \land \wf{S_1'}.
+      \end{equation*}
+      Thus, By Lemma \ref{lemma:cs_preserves_wellformedness},
+      \begin{equation}
+        \label{eq:equivalence_equality:send:wf}
+        \wf{\cs(S_1)} \land \wf{\cs(S_1')}.
+      \end{equation}
+
+      By Lemma \ref{lemma:cs_preserves_sequiv} and assumption
+      $S_1 \sequiv S_1'$,
+      \begin{equation}
+        \label{eq:equivalence_equality:send:sequiv}
+        \cs(S_1) \sequiv \cs(S_1').
+      \end{equation}
+
+      Due to Eqs. \ref{eq:equivalence_equality:send:wf} and
+      \ref{eq:equivalence_equality:send:sequiv},
+      \begin{equation*}
+        (L_\eta(\cs(S_1)), L_\eta(\cs(S_1')) \in R.
+      \end{equation*}
+      Thus, by Lemma \ref{lemma:cs_preserves_trace_language},
+      \begin{equation*}
+        (L_\eta(S_1), L_\eta(S_1') \in R.
+      \end{equation*}
+      Thus,
+      \begin{eqnarray*}
+        &&  (L_\eta(\cs(S)), L_\eta(\cs(S'))) \\
+        &=& (L_\eta(\send B.S_1), L_\eta(\send B.S_1'))
+        \quad \text{(by assumption)} \\
+        &=& (\{\send B\} \concat L_\eta(S_1), \{\send B\} \concat L_\eta(S_1'))
+        \quad \text{(by Eq. \ref{def:trace_language:send})} \\
+        &\in& F_\bisim(R)
+        \quad \text{(by Def. \ref{def:tl_bisim})}
+      \end{eqnarray*}
+
+    \item
+      \label{case:equivalence_equality:recv}
+      $\cs(S) = \recv B.S_1$; $\cs(S') = \recv B.S_1'$; $S_1 \sequiv S_1'$.
+
+      Analogous to case \ref{case:equivalence_equality:send}.
+
+    \item
+      \label{case:equivalence_equality:echoice}
+      $\cs(S) = S_1 \echoice S_2$; $\cs(S') = S_1' \echoice S_2'$;
+      $S_1 \sequiv S_1'$; $S_2 \sequiv S_2'$.
+
+      By Lemma \ref{lemma:inversion_wellformedness} and assumptions
+      $\wf{\cs(S)}$ resp. $\wf{\cs(S')}$,
+      \begin{equation*}
+        \wf{S_1} \land \wf{S_2} \land \wf{S_1'} \land \wf{S_2'}.
+      \end{equation*}
+      Thus, By Lemma \ref{lemma:cs_preserves_wellformedness},
+      \begin{multline}
+        \label{eq:equivalence_equality:echoice:wf}
+        \wf{\cs(S_1)} \land \wf{\cs(S_2)} \land \\
+        \wf{\cs(S_1')} \land \wf{\cs(S_2')}.
+      \end{multline}
+
+      By Lemma \ref{lemma:cs_preserves_sequiv} and assumptions
+      $S_1 \sequiv S_1'$ resp. $S_2 \sequiv S_2'$,
+      \begin{equation}
+        \label{eq:equivalence_equality:echoice:sequiv}
+        \cs(S_1) \sequiv \cs(S_1') \land \cs(S_2) \sequiv \cs(S_2').
+      \end{equation}
+
+      Due to Eqs. \ref{eq:equivalence_equality:echoice:wf} and
+      \ref{eq:equivalence_equality:echoice:sequiv},
+      \begin{eqnarray*}
+        (L_\eta(\cs(S_1)), L_\eta(\cs(S_1')) \in R \land
+        (L_\eta(\cs(S_2)), L_\eta(\cs(S_2')) \in R.
+      \end{eqnarray*}
+      Thus, by Lemma \ref{lemma:cs_preserves_trace_language},
+      \begin{eqnarray*}
+        (L_\eta(S_1), L_\eta(S_1') \in R \land
+        (L_\eta(S_2), L_\eta(S_2') \in R.
+      \end{eqnarray*}
+      Thus,
+      \begin{eqnarray*}
+        &&  (L_\eta(\cs(S)), L_\eta(\cs(S'))) \\
+        &=& (L_\eta(S_1 \echoice S_2), L_\eta(S_1' \echoice S_2'))
+        \quad \text{(by assumption)} \\
+        &=& (\{\send 0\} \concat L_\eta(S_1) \cup \{\send 1\} \concat L_\eta(S_2),
+            \{\send 0\} \concat L_\eta(S_1') \cup \{\send 1\} \concat L_\eta(S_2'))
+        \quad \text{(by Eq. \ref{def:trace_language:send})} \\
+        &\in& F_\bisim(R)
+        \quad \text{(by Def. \ref{def:tl_bisim})}
+      \end{eqnarray*}
+
+    \item
+      \label{case:equivalence_equality:ichoice}
+      $\cs(S) = S_1 \ichoice S_2$; $\cs(S') = S_1' \ichoice S_2'$;
+      $S_1 \sequiv S_1'$; $S_2 \sequiv S_2'$.
+
+    \item
+      All other cases are impossible due to the shape of $\cs(S)$ and
+      $\cs(S')$.
+  \end{enumerate}
+
+  Now choose $S, S', \eta$. By Lemma \ref{lemma:cs_preserves_wellformedness}
+  and assumptions $\wf{S}$ resp. $\wf{S'}$,
+  \begin{equation*}
+    \wf{\cs(S)} \land \wf{\cs(S')}.
+  \end{equation*}
+  By Lemma \ref{lemma:cs_preserves_sequiv} and assumption $S \sequiv S'$,
+  \begin{equation*}
+    \cs(S) \sequiv \cs(S').
+  \end{equation*}
+  Thus,
+  \begin{equation*}
+    (L_\eta(\cs(S)), L_\eta(\cs(S'))) \in R
+  \end{equation*}
+  and due to $R \subseteq \bisim$,
+  \begin{equation*}
+    L_\eta(\cs(S)) \bisim L_\eta(\cs(S')).
+  \end{equation*}
+  Thus, by Lemma \ref{lemma:cs_preserves_trace_language},
+  \begin{equation*}
+    L_\eta(S) \bisim L_\eta(S').
+  \end{equation*}
 \end{proof}
 \end{document}
