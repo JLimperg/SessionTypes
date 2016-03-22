@@ -326,7 +326,7 @@
 \begin{lemma}[Irrelevance of Eta I]
   \label{lemma:eta_irrelevant1}
   \begin{eqnarray*}
-    &&         \forall S \in \Ty;\; \eta, \eta'\colon \Var \to \Tl. \\
+    &&         \forall S \in \S;\; \eta, \eta'\colon \Var \to \Tl. \\
     &&         (\forall X \in \Var.\; (X, S) \in \Free \implies \eta(X) = \eta'(X)) \\
     &\implies& L_\eta(S) = L_{\eta'}(S).
   \end{eqnarray*}
@@ -519,7 +519,7 @@
 \begin{lemma}[Irrelevance of Eta II]
   \label{lemma:eta_irrelevant2}
   \begin{eqnarray*}
-    &&         \forall S \in \Ty. \\
+    &&         \forall S \in \S. \\
     &&         S \in \Closed \\
     &\implies& \forall \eta, \eta'.\; L_\eta(S) = L_\eta(S').
   \end{eqnarray*}
@@ -535,7 +535,7 @@
 \begin{lemma}[Substitution in $L_\eta$]
   \label{lemma:substitution_trace_language}
   \begin{eqnarray*}
-    &&         \forall S, T \in \Ty; X, \eta. \\
+    &&         \forall S, T \in \S; X, \eta. \\
     &&         T \in \Closed \\
     &\implies& L_{\eta[X \mapsto L_\eta(T)]}(S) = L_\eta(S[X \mapsto T])
   \end{eqnarray*}
@@ -699,7 +699,7 @@
 \begin{lemma}[Trace Language of $\mu$ Expansion]
   \label{lemma:mu_expansion_trace_language}
   \begin{eqnarray*}
-    &&         \forall S \in \Ty; \eta, X. \\
+    &&         \forall S \in \S; \eta, X. \\
     &&         \mu X.S \in \Closed \\ % TODO change to wf?
     &\implies& L_\eta(\mu X.S) = L_\eta(S[X \mapsto \mu X.S])
   \end{eqnarray*}
@@ -734,7 +734,7 @@
 \end{proof}
 
 
-\begin{lemma}[Mu Expansion Preserves Wellformedness]
+\begin{lemma}[$\mu$ Expansion Preserves Wellformedness]
   \label{lemma:mu_expansion_wellformedness}
   \begin{eqnarray*}
     &&         \forall S, X. \\
