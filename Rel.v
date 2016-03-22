@@ -60,8 +60,8 @@ Lemma symmetric_sym_iff {A} {R} :
 Proof. solve_LibRelation_conversion. Qed.
 
 Lemma sym_symmetric {A} {R} :
-  LibRelation.refl R -> reflexive A R.
-Proof. intros; apply reflexive_refl_iff; auto. Qed.
+  LibRelation.sym R -> symmetric A R.
+Proof. intros; apply symmetric_sym_iff; auto. Qed.
 
 Lemma transitive_trans_iff {A} {R} :
   transitive A R <-> LibRelation.trans R.
