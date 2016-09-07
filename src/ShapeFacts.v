@@ -1,4 +1,4 @@
-Require Import SessionTypes Shape Tac.
+Require Import Sty Shape Tac.
 
 Lemma shape_dec :
   forall S sh, {shape S = sh} + {shape S <> sh}.

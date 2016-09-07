@@ -1,5 +1,6 @@
 (* TODO Refactor this whole module. *)
-Require Export FunctionalExtensionality Tac Var.
+Require Import Tac Var.
+Require Import FunctionalExtensionality.
 
 Definition override
   {A B}

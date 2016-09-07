@@ -1,6 +1,5 @@
-Require Import Contractive CompleteSubstitution CompleteSubstitutionFacts
-  Equivalence Free SessionTypes Substitution SubstitutionFacts Msg Tac
-  TraceLanguage TraceLanguageFacts Var Wellformed.
+Require Import Contractive CS CSFacts Equiv Free Sty Subst SubstFacts Msg Tac
+  TL TLFacts Var Wf.
 
 
 Create HintDb tleq discriminated.

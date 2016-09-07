@@ -1,6 +1,6 @@
-Require Import CompleteSubstitution CompleteSubstitutionFacts Equivalence Free
-  FreeFacts LibRelation LibLogic NonEquivalence SessionTypes SessionTypesInd
-  Substitution SubstitutionFacts Shape Symmetry Tac Msg Var Wellformed.
+Require Import CS CSFacts Equiv Free FreeFacts NonEquiv Sty StyInd Subst
+  SubstFacts Shape Symmetry Tac Msg Var Wf.
+Require Import TLC.LibRelation TLC.LibLogic.
 
 (* --------------------------------------------------------------------------*)
 (* Automation *)

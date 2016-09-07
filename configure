@@ -1,5 +1,5 @@
 #!/bin/bash
 
-echo "-R src/ Top -R lib/tlc/src/ TLC" > _CoqProject
+echo "-R src/ STE -Q lib/tlc/src/ TLC" > _CoqProject
 find src/ -name '*.v' >> _CoqProject
 coq_makefile -f _CoqProject -o Makefile

@@ -1,4 +1,4 @@
-Require Export LibTactics.
+Require Export TLC.LibTactics.
 
 
 Ltac invertsN n H := do n (inverts H as H).

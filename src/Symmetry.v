@@ -1,5 +1,4 @@
-Require Import SessionTypes.
-Require Import Equivalence.
+Require Import Sty Equiv.
 
 Inductive sym {A} (R : A -> A -> Prop) : A -> A -> Prop :=
 | sym_sym : forall x y, R x y -> sym R y x

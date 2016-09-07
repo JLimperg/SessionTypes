@@ -1,5 +1,5 @@
-Require Import Contractive Env Free FreeFacts Map Msg SessionTypes Shape
-  Substitution SubstitutionFacts Tac TraceLanguage Var Wellformed.
+Require Import Contractive Env Free FreeFacts Map Msg Sty Shape
+  Subst SubstFacts Tac TL Var Wf.
 Require Import FunctionalExtensionality.
 
 

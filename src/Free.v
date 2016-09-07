@@ -1,4 +1,4 @@
-Require Import SessionTypes Tac Var.
+Require Import Sty Tac Var.
 
 Create HintDb free discriminated.
 

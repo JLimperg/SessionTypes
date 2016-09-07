@@ -1,4 +1,4 @@
-Require Import SessionTypes.
+Require Import Sty.
 
 Inductive Shape : Set :=
 | unitS

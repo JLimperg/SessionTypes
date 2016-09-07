@@ -1,4 +1,4 @@
-Require Import Contractive SessionTypes Map Msg Tac Var Wellformed.
+Require Import Contractive Sty Map Msg Tac Var Wf.
 
 
 Create HintDb tl discriminated.

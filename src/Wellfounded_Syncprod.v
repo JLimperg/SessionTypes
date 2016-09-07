@@ -1,5 +1,5 @@
-Require Import Relations Wellfounded.
 Require Import Tac.
+Require Import Relations Wellfounded.
 
 Inductive syncprod {A B} (RA : A -> A -> Prop) (RB : B -> B -> Prop) :
   (A * B) -> (A * B) -> Prop :=

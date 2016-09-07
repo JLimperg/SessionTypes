@@ -1,7 +1,8 @@
 (* TODO This file could probably do with a little more structure, consistent
    naming and such. *)
 
-Require Import MSetList MSetProperties Program.Basics Tac Var.
+Require Import Tac Var.
+Require Import MSetList MSetProperties Program.Basics.
 
 Module S := MSetList.Make VarOrder.
 Module SF := MSetProperties.WPropertiesOn VarOrder S.

@@ -1,5 +1,5 @@
-Require Import Contractive Env Free FreeFacts SessionTypes SessionTypesInd
-  Shape ShapeFacts Substitution Tac Var Wellformed.
+Require Import Contractive Env Free FreeFacts Sty StyInd Shape ShapeFacts
+  Subst Tac Var Wf.
 
 Hint Resolve subst_preserves_wellformedness : subst.
 

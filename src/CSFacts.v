@@ -1,6 +1,5 @@
-Require Import CompleteSubstitution Contractive Equivalence NonEquivalence
-  SessionTypes SessionTypesInd Shape ShapeFacts Substitution SubstitutionFacts
-  Tac TraceLanguage TraceLanguageFacts Wellformed.
+Require Import CS Contractive Equiv NonEquiv Sty StyInd Shape ShapeFacts Subst
+  SubstFacts Tac TL TLFacts Wf.
 
 Lemma cs_shape :
   forall S,

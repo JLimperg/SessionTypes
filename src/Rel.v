@@ -1,6 +1,6 @@
 Require Import Tac.
 Require Export Relations.
-Require LibRelation.
+Require TLC.LibRelation.
 
 Create HintDb rel discriminated.
 Hint Unfold inclusion : rel.
@@ -48,25 +48,25 @@ Ltac solve_LibRelation_conversion :=
   intros; split; introv H; red in H; red; eauto.
 
 Lemma reflexive_refl_iff {A} {R} :
-  reflexive A R <-> LibRelation.refl R.
+  reflexive A R <-> TLC.LibRelation.refl R.
 Proof. solve_LibRelation_conversion. Qed.
 
 Lemma refl_reflexive {A} {R} :
-  LibRelation.refl R -> reflexive A R.
+  TLC.LibRelation.refl R -> reflexive A R.
 Proof. intros; apply reflexive_refl_iff; auto. Qed.
 
 Lemma symmetric_sym_iff {A} {R} :
-  symmetric A R <-> LibRelation.sym R.
+  symmetric A R <-> TLC.LibRelation.sym R.
 Proof. solve_LibRelation_conversion. Qed.
 
 Lemma sym_symmetric {A} {R} :
-  LibRelation.sym R -> symmetric A R.
+  TLC.LibRelation.sym R -> symmetric A R.
 Proof. intros; apply symmetric_sym_iff; auto. Qed.
 
 Lemma transitive_trans_iff {A} {R} :
-  transitive A R <-> LibRelation.trans R.
+  transitive A R <-> TLC.LibRelation.trans R.
 Proof. solve_LibRelation_conversion. Qed.
 
 Lemma trans_transitive {A} {R} :
-  LibRelation.trans R -> transitive A R.
+  TLC.LibRelation.trans R -> transitive A R.
 Proof. intros; apply transitive_trans_iff; auto. Qed.

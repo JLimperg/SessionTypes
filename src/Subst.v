@@ -1,4 +1,4 @@
-Require Import SessionTypes Var.
+Require Import Sty Var.
 
 Create HintDb subst discriminated.
 

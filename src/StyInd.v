@@ -1,6 +1,6 @@
+Require Import Sty Tac Var Wellfounded_Syncprod.
 Require Import Arith.Wf_nat Relations.Relation_Operators
   Wellfounded.Lexicographic_Product.
-Require Import SessionTypes Tac Var Wellfounded_Syncprod.
 
 (*****************************************************************************)
 (* Construction order *)

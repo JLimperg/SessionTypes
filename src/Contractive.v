@@ -1,5 +1,5 @@
-Require Import Env Free FreeFacts SessionTypes Shape ShapeFacts Tac Var
-  Wellformed.
+Require Import Env Free FreeFacts Sty Shape ShapeFacts Tac Var
+  Wf.
 
 Create HintDb contract discriminated.
 

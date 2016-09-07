@@ -1,5 +1,5 @@
-Require Import Env Morphisms SessionTypes Substitution Program.Basics Msg
-  Shape Tac Var.
+Require Import Env Sty Subst Msg Shape Tac Var.
+Require Import Morphisms Program.Basics.
 
 Create HintDb wf discriminated.
 

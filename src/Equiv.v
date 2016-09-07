@@ -1,4 +1,4 @@
-Require Import Env SessionTypes Shape Substitution Tac Var.
+Require Import Env Sty Shape Subst Tac Var.
 
 Inductive sequiv_gen sequiv : Sty -> Sty -> Prop :=
 | sequiv_gen_end : sequiv_gen sequiv unit unit

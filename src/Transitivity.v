@@ -1,6 +1,4 @@
-Require Import CompleteSubstitution CompleteSubstitutionFacts Equivalence
-  Reflexivity SessionTypes SessionTypesInd Substitution SubstitutionFacts
-  Tac Wellformed.
+Require Import CS CSFacts Equiv Reflexivity Sty StyInd Subst SubstFacts Tac Wf.
 
 Create HintDb trans discriminated.
 Hint Resolve sequiv_reflexive : trans.

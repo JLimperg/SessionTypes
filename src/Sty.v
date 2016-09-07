@@ -1,4 +1,5 @@
-Require Import Msg Tac LibLogic Var.
+Require Import Msg Tac Var.
+Require Import TLC.LibLogic.
 
 Inductive Sty : Set :=
 | unit : Sty

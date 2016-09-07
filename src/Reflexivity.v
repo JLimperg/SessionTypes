@@ -1,4 +1,4 @@
-Require Import Equivalence SessionTypes Substitution Tac Var Wellformed.
+Require Import Equiv Sty Subst Tac Var Wf.
 
 Create HintDb refl discriminated.
 

@@ -1,4 +1,4 @@
-Require Import SessionTypes Substitution Shape Msg Var.
+Require Import Sty Subst Shape Msg Var.
 
 Create HintDb nsequiv discriminated.
 

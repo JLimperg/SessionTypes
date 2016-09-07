@@ -1,5 +1,5 @@
-Require Import Env SessionTypes SessionTypesInd Substitution SubstitutionFacts
-  Tac LibFix Var Wellformed.
+Require Import Env Sty StyInd Subst SubstFacts Tac Var Wf.
+Require Import TLC.LibFix.
 
 Definition Cs cs S :=
   match S with

@@ -1,4 +1,4 @@
-Require Import Env Free SessionTypes Substitution Tac Var Wellformed.
+Require Import Env Free Sty Subst Tac Var Wf.
 
 (* -------------------------------------------------------------------------- *)
 (* Absurdities *)
