@@ -194,6 +194,7 @@ Proof.
   unfold wellformed. unfold Closed. intros S Hwf X. eapply ok_free;
     eauto with env.
 Qed.
+Hint Resolve wellformed_closed : free.
 
 
 Lemma eta_irrelevant_helper :
