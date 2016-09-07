@@ -1,4 +1,4 @@
-Require Import Env Free FreeFacts SessionTypes SessionTypesInd
+Require Import Contractive Env Free FreeFacts SessionTypes SessionTypesInd
   Shape ShapeFacts Substitution Tac Var Wellformed.
 
 Hint Resolve subst_preserves_wellformedness : subst.
@@ -11,6 +11,21 @@ Proof.
   induction S; introv Hvarsh; simpl in *; auto;
     destruct (beq_var X v); auto.
     exfalso; auto.
+Qed.
+
+
+Lemma subst_preserves_Contractive :
+  forall T X S,
+  shape T <> varS ->
+  Contractive T ->
+  Contractive S ->
+  Contractive (subst X T S).
+Proof.
+  introv HshapeT HcontrT HcontrS. induction HcontrS; simpl; auto with contract.
+  - destruct (beq_var X X0); [auto with contract|]. constructor; [auto|].
+    * destruct S; simpl; auto with contract.
+      + destruct (beq_var X v); auto.
+  - destruct (beq_var X X0); auto with contract.
 Qed.
 
 
