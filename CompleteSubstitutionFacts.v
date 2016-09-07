@@ -1,5 +1,6 @@
-Require Import CompleteSubstitution Equivalence NonEquivalence
-  SessionTypes SessionTypesInd Shape ShapeFacts Substitution Tac Wellformed.
+Require Import CompleteSubstitution Contractive Equivalence NonEquivalence
+  SessionTypes SessionTypesInd Shape ShapeFacts Substitution SubstitutionFacts
+  Tac TraceLanguage TraceLanguageFacts Wellformed.
 
 Lemma cs_shape :
   forall S,
@@ -179,3 +180,32 @@ Proof.
     introv Hwf; destruct S; cs_simpl; eauto 10 with subst.
 Qed.
 Hint Resolve cs_preserves_wellformedness : subst.
+
+
+Lemma tl_eq :
+  forall eta S S' c c',
+  S = S' ->
+  tl eta S c = tl eta S' c'.
+Proof.
+  introv Heq. gen c c'. rewrite Heq. apply tl_contractive_irrelevant.
+Qed.
+
+
+(* TODO beautify *)
+Lemma cs_preserves_tl :
+  forall S eta c c',
+  wellformed S ->
+  tl eta S c = tl eta (cs S) c'.
+Proof.
+  intros S eta. induction S using (well_founded_ind lt_Sty_mu_prefix_wf);
+    introv Hwf; destruct S; try solve [apply tl_eq; cs_simpl; reflexivity].
+  - erewrite tl_mu_subst. erewrite H with (y := subst v (mu v S) S).
+    apply tl_eq. cs_simpl. reflexivity.
+    all: auto with subst wf free.
+Unshelve.
+  apply subst_preserves_Contractive.
+    intro contra; simpl in contra; discriminate contra.
+    apply wellformed_Contractive; auto.
+    inverts c. assumption.
+  apply wellformed_Contractive. auto with subst.
+Qed.
