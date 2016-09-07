@@ -1,5 +1,5 @@
 Require Import Tac.
-Require Import Arith Orders CompareFacts.
+Require Import Arith Structures.Orders Structures.OrdersFacts.
 
 Create HintDb env discriminated.
 
@@ -69,7 +69,7 @@ Proof. intros. destruct x; destruct y; unfold beq_var. apply beq_nat_sym. Qed.
 Module VarOrder <: OrderedType.
 
   Module N := PeanoNat.Nat.
-  Module NF := CompFacts N.
+  Module NF := OrderedTypeFacts N.
 
   Definition t := Var.
   Definition eq (x y : Var) := eq x y.
@@ -108,14 +108,13 @@ Module VarOrder <: OrderedType.
   Proof. solve_proper. Qed.
 
   Lemma compare_spec : forall x y : Var, CompareSpec (x = y) (lt x y) (lt y x) (compare x y).
-  Proof with auto.
+  Proof.
     intros x y. destruct (compare x y) eqn:Hxy; destruct x; destruct y;
-      simpl in Hxy.
-      constructor. assert (n = n0) as eqnn0. apply NF.compare_eq_iff...
-      rewrite eqnn0...
-
-      constructor. unfold lt. apply NF.compare_lt_iff...
-      constructor. unfold gt. apply NF.compare_gt_iff...
+      simpl in Hxy; constructor; first
+        [ apply NF.compare_eq_iff in Hxy
+        | apply NF.compare_lt_iff in Hxy
+        | apply NF.compare_gt_iff in Hxy
+        ]; auto.
   Qed.
 
 End VarOrder.
