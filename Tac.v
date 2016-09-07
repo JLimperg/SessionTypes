@@ -62,3 +62,13 @@ Hint Extern 0 =>
   | H : False |- _ => contradiction
   end
 .
+
+
+Ltac autodiscriminate :=
+  match goal with
+  | H : ?X = ?Y |- _ => discriminate H
+  | |- ?X <> ?Y =>
+      let H := fresh in
+      red; intro H; discriminate H
+  end
+.
