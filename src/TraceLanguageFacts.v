@@ -1,6 +1,6 @@
 Require Import Contractive Env Free FreeFacts Map Msg SessionTypes Shape
   Substitution SubstitutionFacts Tac TraceLanguage Var Wellformed.
-Require Import FunctionalExtensionality ProofIrrelevance.
+Require Import FunctionalExtensionality.
 
 
 Lemma tl_contractive_irrelevant :
