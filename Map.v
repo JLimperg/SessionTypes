@@ -1,3 +1,4 @@
+(* TODO Refactor this whole module. *)
 Require Export FunctionalExtensionality Tac Var.
 
 Definition override
@@ -12,7 +13,7 @@ Notation eta_override := (override eq_var_dec).
 
 
 Lemma override_exchange :
-  forall A B eq_dec f (y z : A) (y' z' : B),
+  forall A B eq_dec (f : A -> B) y z y' z',
   y <> z ->
   override eq_dec (override eq_dec f z z') y y' =
   override eq_dec (override eq_dec f y y') z z'.
@@ -23,7 +24,7 @@ Proof.
 Qed.
 
 Lemma eta_override_exchange :
-  forall B (f : Var -> B) (y z : Var) (y' z' : B),
+  forall B (f : Var -> B) y z y' z',
   y <> z ->
   eta_override (eta_override f z z') y y' =
   eta_override (eta_override f y y') z z'.
@@ -31,7 +32,7 @@ Proof. introv H. apply override_exchange. auto. Qed.
 
 
 Lemma override_overwrite :
-  forall A B eq_dec f (y z : A) (y' z' : B),
+  forall A B eq_dec (f : A -> B) y z y' z',
   y = z ->
   override eq_dec (override eq_dec f z z') y y' = override eq_dec f y y'.
 Proof.
@@ -40,7 +41,35 @@ Proof.
 Qed.
 
 Lemma eta_override_overwrite :
-  forall B (f : Var -> B) (y z : Var) (y' z' : B),
+  forall B (f : Var -> B) y z y' z',
   y = z ->
   eta_override (eta_override f z z') y y' = eta_override f y y'.
 Proof. introv H. apply override_overwrite. auto. Qed.
+
+
+Lemma override_same :
+  forall A B eq_dec (f : A -> B) x x',
+  override eq_dec f x x' x = x'.
+Proof.
+  intros. compute. destruct (eq_dec x x); [reflexivity | exfalso; auto].
+Qed.
+
+Lemma eta_override_same :
+  forall B (f : Var -> B) x x',
+  eta_override f x x' x = x'.
+Proof. intros. apply override_same. Qed.
+
+
+Lemma override_different :
+  forall A B eq_dec (f : A -> B) x x' y,
+  x <> y ->
+  override eq_dec f x x' y = f y.
+Proof.
+  intros. compute. destruct (eq_dec y x); [exfalso; auto | reflexivity].
+Qed.
+
+Lemma eta_override_different :
+  forall B (f : Var -> B) x x' y,
+  x <> y ->
+  eta_override f x x' y = f y.
+Proof. intros. apply override_different. assumption. Qed.
