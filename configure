@@ -1,3 +1,5 @@
 #!/bin/bash
 
-coq_makefile *.v tlc/src/*.v J = 5 > Makefile
+echo "-R src/ Top -R lib/tlc/src/ TLC" > _CoqProject
+find src/ -name '*.v' >> _CoqProject
+coq_makefile -f _CoqProject -o Makefile

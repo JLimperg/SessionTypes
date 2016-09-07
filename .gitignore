@@ -1,4 +1,5 @@
 Makefile
+_CoqProject
 *.vo
 *.vio
 *.d
