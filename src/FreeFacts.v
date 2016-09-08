@@ -74,7 +74,9 @@ Ltac free_inv_auto X S :=
   end
 .
 
-Hint Extern 4 (Free ?X ?S) => free_inv_auto X S.
+Hint Extern 4 (Free ?X ?S) =>
+  free_inv_auto X S
+: free.
 
 
 Hint Extern 2 (Free _ _) =>
@@ -143,58 +145,6 @@ Proof.
     auto with free;
     destruct (eq_var_dec X v); subst; auto with free.
 Defined.
-
-
-Lemma ok_checked_free :
-  forall S X XS,
-  ok XS S \/ checked XS S ->
-  ~ env_mem X XS ->
-  ~ Free X S.
-Proof.
-  induction S; introv Hok Henv; decompose_or_auto;
-    auto with free;
-    match goal with
-    | |- context [var _]     => idtac
-    | Hok : ok _ _      |- _ => inverts1 Hok
-    | Hok : checked _ _ |- _ => inverts2 Hok
-    end; eauto 6 with free.
-
-    introv H; inverts H; eapply IHS; eauto with free;
-    introv H; apply env_mem_add in H; auto.
-
-    introv H; inverts H; eapply IHS; eauto with free;
-    introv H; apply env_mem_add in H; auto.
-
-    inverts1 Hok.
-
-    inverts1 Hok.
-      introv H. inverts1 H. auto.
-      inverts Hok.
-Qed.
-
-
-Lemma ok_free :
-  forall S X XS,
-  ok XS S ->
-  ~ env_mem X XS ->
-  ~ Free X S.
-Proof. intros. eapply ok_checked_free; eauto. Qed.
-
-
-Lemma checked_free :
-  forall S X XS,
-  checked XS S ->
-  ~ env_mem X XS ->
-  ~ Free X S.
-Proof. intros. eapply ok_checked_free; eauto. Qed.
-
-
-Lemma wellformed_closed : forall S, wellformed S -> Closed S.
-Proof.
-  unfold wellformed. unfold Closed. intros S Hwf X. eapply ok_free;
-    eauto with env.
-Qed.
-Hint Resolve wellformed_closed : free.
 
 
 Lemma eta_irrelevant_helper :

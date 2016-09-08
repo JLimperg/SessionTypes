@@ -1,5 +1,4 @@
-Require Import Env Free FreeFacts Sty Shape ShapeFacts Tac Var
-  Wf.
+Require Import Msg Sty Shape Var.
 
 Create HintDb contractive discriminated.
 
@@ -34,68 +33,3 @@ Inductive Contractive : Sty -> Prop :=
     Contractive (var X)
 .
 Hint Constructors Contractive : contractive.
-
-
-(******************************************************************************)
-(* Automation *)
-
-
-Hint Extern 2 (Contractive ?S) =>
-  let inv H := solve [inversion H; assumption] in
-  match goal with
-  | H : Contractive (send _ S) |- _ => inv H
-  | H : Contractive (recv _ S) |- _ => inv H
-  | H : Contractive (echoice S _) |- _ => inv H
-  | H : Contractive (echoice _ S) |- _ => inv H
-  | H : Contractive (ichoice S _) |- _ => inv H
-  | H : Contractive (ichoice _ S) |- _ => inv H
-  | H : Contractive (mu _ S) |- _ => inv H
-  end
-: contractive.
-
-
-Hint Extern 2 (shape ?S <> varS) =>
-  match goal with
-  | H : Contractive (mu _ S) |- _ => solve [inversion H; assumption]
-  end
-: contractive.
-
-
-(******************************************************************************)
-(* Lemmas *)
-
-
-Lemma ok_checked_Contractive :
-  forall S,
-  (forall XS, ok XS S -> Contractive S) /\
-  (forall XS, checked XS S -> Contractive S).
-Proof.
-  induction S; split; introv H; try (decompose_and IHS); constructor; inverts1 H;
-    repeat match goal with
-    | H : checked _ _ |- _ => inverts H
-    end;
-    eauto with wf contractive.
-  - introv contra. shape_inv_auto. auto with wf.
-  - inverts H. eauto.
-  - inverts1 H. introv contra. shape_inv_auto. auto with wf.
-  Unshelve. all: exact (mkVar 0). (* Not sure why this hack is necessary. *)
-Qed.
-
-Lemma ok_Contractive :
-  forall S,
-  ok_some S ->
-  Contractive S.
-Proof. introv H. pose proof (ok_checked_Contractive S). jauto. Qed.
-
-Lemma checked_Contractive :
-  forall S XS,
-  checked XS S ->
-  Contractive S.
-Proof. introv H. pose proof (ok_checked_Contractive S). jauto. Qed.
-
-Lemma wellformed_Contractive :
-  forall S,
-  wellformed S ->
-  Contractive S.
-Proof. unfold wellformed. intros. eauto using ok_Contractive. Qed.
-Hint Resolve wellformed_Contractive : contractive.

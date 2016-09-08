@@ -1,5 +1,5 @@
-Require Import CS CSFacts Equiv Free FreeFacts NonEquiv Sty StyInd Subst
-  SubstFacts Shape Symmetry Tac Msg Var Wf.
+Require Import Contractive ContractiveFacts CS CSFacts Equiv Free FreeFacts
+  NonEquiv Sty StyInd Subst SubstFacts Shape Symmetry Tac Msg Var Wf.
 Require Import TLC.LibRelation TLC.LibLogic.
 
 (* --------------------------------------------------------------------------*)
@@ -7,12 +7,12 @@ Require Import TLC.LibRelation TLC.LibLogic.
 
 Lemma sequiv_var_absurd_l :
   forall S X,
-  ok_some S ->
+  Contractive S ->
   ~ sequiv (var X) S.
 Proof.
-  induction S using (well_founded_ind lt_Sty_mu_prefix_wf); introv Hok contra;
-    inverts2 contra.
-  - eapply H with (y := subst X0 (mu X0 S') S'); eauto with subst.
+  induction S using (well_founded_ind lt_Sty_mu_prefix_wf);
+    introv Hcontr contra; inverts2 contra.
+  - eapply H with (y := subst X0 (mu X0 S') S'); eauto with contractive subst.
 Qed.
 
 Hint Extern 4 =>
@@ -25,12 +25,9 @@ Hint Extern 4 =>
 
 Lemma sequiv_var_absurd_r :
   forall S X,
-  ok_some S ->
+  Contractive S ->
   ~ sequiv S (var X).
-Proof.
-  introv Hok contra. apply sequiv_symmetric in contra.
-  apply sequiv_var_absurd_l in contra; auto.
-Qed.
+Proof. introv Hok contra. apply sequiv_symmetric in contra. auto. Qed.
 
 Hint Extern 4 =>
   match goal with
@@ -40,62 +37,14 @@ Hint Extern 4 =>
 .
 
 
-Lemma sequiv_var_absurd_both :
-  forall X Y,
-  ~ sequiv (var X) (var Y).
-Proof. introv H; inverts2 H. Qed.
-
-Hint Extern 2 =>
-  match goal with
-  | H : sequiv (var ?X) (var ?Y) |- _ =>
-      apply sequiv_var_absurd_both in H; contradiction
-  end
-.
-
-
-Lemma sequiv_checked_ok_l :
-  forall S S' XS XS',
-  checked XS S ->
-  checked XS' S' ->
-  sequiv S S' ->
-  ok XS S.
-Proof. introv Hch Hch' Heq. inverts Hch; inverts Hch'; eauto. Qed.
-Hint Resolve sequiv_checked_ok_l : nsequiv.
-
-Lemma sequiv_checked_ok_r :
-  forall S S' XS XS',
-  checked XS S ->
-  checked XS' S' ->
-  sequiv S S' ->
-  ok XS' S'.
-Proof.
-  introv Hch Hch' Heq. apply sequiv_symmetric in Heq.
-  eauto using sequiv_checked_ok_l.
-Qed.
-
-Hint Extern 4 (ok ?XS ?S) =>
-  match goal with
-  | Heq : sequiv S ?S', Hch : checked XS S, Hch' : checked _ ?S' |- _ =>
-      refine (sequiv_checked_ok_l _ _ _ _ Hch Hch' Heq)
-  end
-: nsequiv.
-
-Hint Extern 4 (ok ?XS' ?S') =>
-  match goal with
-  | Heq : sequiv ?S S', Hch' : checked XS' S', Hch : checked _ ?S |- _ =>
-      refine (sequiv_checked_ok_r _ _ _ _ Hch Hch' Heq)
-  end
-: nsequiv.
-
-
 (* --------------------------------------------------------------------------*)
 (* nsequiv -> ~ sequiv *)
 
 
 Lemma nsequiv_not_sequiv :
-  forall S S' XS XS',
-  ok XS S ->
-  ok XS' S' ->
+  forall S S',
+  Contractive S ->
+  Contractive S' ->
   nsequiv S S' ->
   ~ sequiv S S'.
 Proof.
@@ -104,12 +53,12 @@ Proof.
     | inverts2 contra; inverts Hok; inverts Hok';
       unfold not in *; eauto with nsequiv
     ].
-  - apply cs_preserves_sequiv_r in contra; eauto.
-    inverts2 contra; [|eauto using cs_mu_absurd].
-    + apply IHnsequiv; eauto using uncs_preserves_sequiv_r with subst.
-  - apply cs_preserves_sequiv_l in contra; eauto.
-    inverts2 contra; [eauto using cs_mu_absurd|].
-    + apply IHnsequiv; eauto using uncs_preserves_sequiv_l with subst.
+  - apply cs_preserves_sequiv_r in contra; inverts2 contra;
+    [apply IHnsequiv|..];
+    auto using uncs_preserves_sequiv_r with contractive subst.
+  - apply cs_preserves_sequiv_l in contra; inverts2 contra;
+    [|apply IHnsequiv|..];
+    auto using uncs_preserves_sequiv_l with contractive subst.
 Qed.
 
 
@@ -163,8 +112,8 @@ Lemma nsequiv_not_sequiv_iff :
   wellformed S' ->
   (nsequiv S S' <-> ~ sequiv S S').
 Proof.
-  introv Hok Hok'. split; introv H.
-  + unfold wellformed in *; eapply nsequiv_not_sequiv; eauto.
+  introv Hok Hok'. split; introv H; unfold wellformed in *.
+  + eapply nsequiv_not_sequiv; eauto.
   + gen H. apply contrapose_elim. introv H. apply not_not_intro.
-    apply not_nsequiv_sequiv; auto using wellformed_closed.
+    apply not_nsequiv_sequiv; auto.
 Qed.

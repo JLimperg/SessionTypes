@@ -1,5 +1,6 @@
-Require Import Env Sty StyInd Subst SubstFacts Tac Var Wf.
+Require Import Contractive Env Sty StyInd Subst SubstFacts Tac Var.
 Require Import TLC.LibFix.
+
 
 Definition Cs cs S :=
   match S with
@@ -12,13 +13,13 @@ Definition cs := FixFun Cs.
 
 Lemma cs_fix :
   forall S,
-  ok_some S ->
+  Contractive S ->
   cs S = Cs cs S.
 Proof.
   applys (FixFun_fix_partial (lt_Sty_mu_prefix)).
   - auto.
   - unfolds. apply lt_Sty_mu_prefix_wf.
-  - unfolds. introv Hok H. destruct x; eauto with subst.
+  - unfolds. introv Hok H. destruct x; eauto with contractive subst.
 Qed.
 
 
@@ -40,5 +41,5 @@ Ltac cs_simpl :=
   match goal with
   | |- context [cs ?S] => ensure_constructor S; repl S
   | H : context [cs ?S] |- _ => ensure_constructor S; repl S
-  end; [ try cs_simpl | eauto with subst wf .. ]
+  end; [ try cs_simpl | eauto with subst wf contractive .. ]
 .

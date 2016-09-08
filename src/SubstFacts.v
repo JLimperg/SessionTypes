@@ -1,7 +1,6 @@
-Require Import Contractive Env Free FreeFacts Sty StyInd Shape ShapeFacts
-  Subst Tac Var Wf.
+Require Import Contractive ContractiveFacts Env Free FreeFacts Sty StyInd Shape
+  ShapeFacts Subst Tac Var Wf.
 
-Hint Resolve subst_preserves_wellformedness : subst.
 
 Lemma subst_preserves_shape :
   forall S X r,
@@ -15,18 +14,30 @@ Qed.
 
 
 Lemma subst_preserves_Contractive :
-  forall T X S,
-  shape T <> varS ->
-  Contractive T ->
+  forall S X R,
   Contractive S ->
-  Contractive (subst X T S).
+  Contractive R ->
+  shape R <> varS ->
+  Contractive (subst X R S).
 Proof.
-  introv HshapeT HcontrT HcontrS. induction HcontrS; simpl; auto with contractive.
+  introv HcontrS HcontrT HshapeT. induction HcontrS; simpl; auto with contractive.
   - destruct (beq_var X X0); [auto with contractive|]. constructor; [auto|].
     * destruct S; simpl; auto with contractive.
       + destruct (beq_var X v); auto.
   - destruct (beq_var X X0); auto with contractive.
 Qed.
+Hint Resolve subst_preserves_Contractive : subst.
+
+
+Lemma mu_unfold_preserves_Contractive :
+  forall S X,
+  Contractive (mu X S) ->
+  Contractive (subst X (mu X S) S).
+Proof.
+  introv H. apply subst_preserves_Contractive; auto with contractive.
+  - simpl. autodiscriminate.
+Qed.
+Hint Resolve mu_unfold_preserves_Contractive : contractive.
 
 
 Lemma subst_neutral :
@@ -101,7 +112,34 @@ Proof.
 Qed.
 
 
-Lemma Closed_shortcut_mu :
+Lemma subst_preserves_Closed :
+  forall S X R,
+  Closed S ->
+  Closed R ->
+  Closed (subst X R S).
+Proof.
+  introv HS HR. unfold Closed in *. introv Hfree.
+  apply free_subst_inversion in Hfree. norm_hyp_auto; [eapply HR | eapply HS];
+    eauto.
+Qed.
+Hint Resolve subst_preserves_Closed : subst.
+
+
+Lemma subst_preserves_wellformed :
+  forall S X R,
+  wellformed S ->
+  wellformed R ->
+  wellformed (subst X R S).
+Proof.
+  unfold wellformed. introv HS HR. norm_hyp_auto. split.
+  - assert (shape R <> varS) by (
+      destruct R; simpl; try autodiscriminate; auto with free).
+    auto with subst.
+  - auto with subst.
+Qed.
+
+
+Lemma mu_unfold_preserves_Closed :
   forall S X,
   Closed (mu X S) ->
   Closed (subst X (mu X S) S).
@@ -109,48 +147,33 @@ Proof.
   unfold Closed; introv H; intro Y; specialize H with Y; contradict H;
   apply free_subst_inversion in H; auto with free.
 Qed.
-
-Hint Extern 2 (Closed (subst ?X (mu ?X ?S) ?S)) =>
-  match goal with
-  | H : Closed (mu X S) |- _ =>
-      apply Closed_shortcut_mu in H; assumption
-  end
-: free.
+Hint Resolve mu_unfold_preserves_Closed : free.
 
 
-Lemma subst_ok_mu :
-  forall S X XS,
-  ok XS (mu X S) ->
-  ok XS (subst X (mu X S) S).
-Proof.
-  introv Hok. eapply subst_preserves_wellformedness; [|inverts Hok]; auto.
-Qed.
-Hint Resolve subst_ok_mu : subst.
+Lemma mu_unfold_preserves_wellformed :
+  forall S X,
+  wellformed (mu X S) ->
+  wellformed (subst X (mu X S) S).
+Proof. unfold wellformed. auto with contractive free. Qed.
 
 
 Lemma lt_Sty_mu_prefix_subst :
   forall S X R,
-  ok_some S ->
+  Contractive S ->
+  shape S <> varS ->
   lt_Sty_mu_prefix (subst X R S) (mu X S).
 Proof.
-  intros S X R; induction S; introv Hok; try solve [constructor].
+  intros S X R; induction S; introv Hcontr Hsh; try solve [constructor].
   - simpl. destruct (beq_var X v); [constructor|].
-      decompose_ex Hok. inverts Hok. unfold lt_Sty_mu_prefix in *.
-      unfold Wf_nat.ltof in *. simpl in *. apply Lt.lt_n_S. eauto.
-  - inverts2 Hok.
+    inverts Hcontr. unfold lt_Sty_mu_prefix in *. unfold Wf_nat.ltof in *.
+    simpl in *. apply Lt.lt_n_S. eauto.
+  - exfalso; auto.
 Qed.
 
 
 Lemma lt_Sty_mu_prefix_subst_mu :
-  forall S XS X Y,
-  ok XS (mu Y S) ->
+  forall S X,
+  Contractive (mu X S) ->
   lt_Sty_mu_prefix (subst X (mu X S) S) (mu X S).
-Proof. introv H. apply lt_Sty_mu_prefix_subst. inverts H. eauto. Qed.
-
-Hint Extern 1 (lt_Sty_mu_prefix (subst ?X (mu ?X ?S) ?S) (mu ?X ?S)) =>
-  match goal with
-  | H : ok ?XS1 (mu ?Y1 S) |- _ =>
-      apply lt_Sty_mu_prefix_subst_mu with (XS := XS1) (Y := Y1);
-      assumption
-  end
-: subst.
+Proof. intros. apply lt_Sty_mu_prefix_subst; auto with contractive. Qed.
+Hint Resolve lt_Sty_mu_prefix_subst_mu : subst.

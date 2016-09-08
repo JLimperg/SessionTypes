@@ -1,4 +1,4 @@
-Require Import Equiv Sty Subst Tac Var Wf.
+Require Import Equiv Sty Subst Tac Var Wf WfFacts.
 
 Create HintDb refl discriminated.
 
