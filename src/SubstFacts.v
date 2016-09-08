@@ -21,11 +21,11 @@ Lemma subst_preserves_Contractive :
   Contractive S ->
   Contractive (subst X T S).
 Proof.
-  introv HshapeT HcontrT HcontrS. induction HcontrS; simpl; auto with contract.
-  - destruct (beq_var X X0); [auto with contract|]. constructor; [auto|].
-    * destruct S; simpl; auto with contract.
+  introv HshapeT HcontrT HcontrS. induction HcontrS; simpl; auto with contractive.
+  - destruct (beq_var X X0); [auto with contractive|]. constructor; [auto|].
+    * destruct S; simpl; auto with contractive.
       + destruct (beq_var X v); auto.
-  - destruct (beq_var X X0); auto with contract.
+  - destruct (beq_var X X0); auto with contractive.
 Qed.
 
 
