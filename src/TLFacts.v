@@ -3,6 +3,78 @@ Require Import Contractive Env Free FreeFacts Map Msg Sty Shape
 Require Import FunctionalExtensionality.
 
 
+(******************************************************************************)
+(* Facts about Tl_bisim *)
+
+
+Inductive R_Tl_bisim_reflexive : Tl -> Tl -> Prop :=
+| R_Tl_bisim_reflexive_intro :
+    forall l,
+    R_Tl_bisim_reflexive l l
+.
+
+Lemma Tl_bisim_reflexive :
+  forall l,
+  Tl_bisim l l.
+Proof.
+  intros. apply Tl_bisim_coind with (R := R_Tl_bisim_reflexive);
+    [|constructor; auto].
+  clear. introv H. inverts H. rename l' into l. destruct l; constructor;
+    constructor.
+Qed.
+
+
+Inductive R_Tl_bisim_symmetric : Tl -> Tl -> Prop :=
+| R_Tl_bisim_symmetric_intro :
+    forall l l',
+    Tl_bisim l l' ->
+    R_Tl_bisim_symmetric l' l
+.
+
+Lemma Tl_bisim_symmetric :
+  forall l l',
+  Tl_bisim l l' ->
+  Tl_bisim l' l.
+Proof.
+  intros. apply Tl_bisim_coind with (R := R_Tl_bisim_symmetric);
+    [|constructor; auto].
+  clear. introv H. inverts1 H. inverts2 H; constructor; constructor; auto.
+Qed.
+
+
+
+Inductive R_Tl_bisim_transitive : Tl -> Tl -> Prop :=
+| R_Tl_bisim_transitive_intro :
+    forall l1 l2 l3,
+    Tl_bisim l1 l2 ->
+    Tl_bisim l2 l3 ->
+    R_Tl_bisim_transitive l1 l3
+.
+
+Lemma Tl_bisim_transitive :
+  forall l1 l2 l3,
+  Tl_bisim l1 l2 ->
+  Tl_bisim l2 l3 ->
+  Tl_bisim l1 l3.
+Proof.
+  intros. apply Tl_bisim_coind with (R := R_Tl_bisim_transitive);
+    [|econstructor; eauto].
+  clear. introv H. inversion_clear H as [l1 l2 l3 H1 H2]. subst.
+  inverts2 H1; inverts2 H2; constructor; econstructor; eauto.
+Qed.
+
+
+Add Relation Tl Tl_bisim
+  reflexivity proved by Tl_bisim_reflexive
+  symmetry proved by Tl_bisim_symmetric
+  transitivity proved by Tl_bisim_transitive
+  as Tl_bisim_rel.
+
+
+(******************************************************************************)
+(* Facts about tl *)
+
+
 Lemma tl_contractive_irrelevant :
   forall eta S contr contr',
   tl eta S contr = tl eta S contr'.

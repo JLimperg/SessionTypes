@@ -2,9 +2,6 @@ Require Import Contractive CS CSFacts Equiv Free Sty Subst SubstFacts Msg Tac
   TL TLFacts Var Wf WfFacts.
 
 
-Create HintDb tleq discriminated.
-
-
 Inductive R_trace_bisim_equivalence' : Sty -> Sty -> Prop :=
 | R_trace_bisim_equivalence'_intro :
     forall S S' eta c c',
@@ -12,7 +9,6 @@ Inductive R_trace_bisim_equivalence' : Sty -> Sty -> Prop :=
     wellformed S' ->
     Tl_bisim (tl eta S c) (tl eta S' c') ->
     R_trace_bisim_equivalence' S S'.
-Hint Constructors R_trace_bisim_equivalence' : tleq.
 
 
 Lemma trace_bisim_equivalence' :
@@ -66,8 +62,7 @@ Theorem trace_eq_equivalence :
   (tl eta S (wellformed_Contractive Swf)) =
     (tl eta S' (wellformed_Contractive Swf')) ->
   sequiv S S'.
-Proof.
-  introv Heq. eapply trace_bisim_equivalence. rewrite Heq. Abort.
+Proof. introv H. eapply trace_bisim_equivalence. rewrite H. reflexivity. Qed.
 
 
 Inductive R_equivalence_trace_bisim' : Tl -> Tl -> Prop :=
