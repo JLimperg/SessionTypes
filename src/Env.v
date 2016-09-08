@@ -66,6 +66,11 @@ Lemma env_add_mem :
   env_mem x (env_add y e).
 Proof. intros e x y H. apply S.add_spec; auto. Qed.
 
+Lemma env_add_mem' :
+  forall e x,
+  env_mem x (env_add x e).
+Proof. intros. apply SF.Dec.F.add_1. auto. Qed.
+
 Lemma env_mem_add :
   forall e x y,
   x <> y ->
