@@ -32,3 +32,23 @@ Fixpoint beq_Sty (S T : Sty) : bool :=
 
 Global Instance Sty_Inhab : Inhab Sty.
 Proof. constructor. exists unit. trivial. Qed.
+
+
+Create HintDb stysub discriminated.
+
+
+Inductive StySubSimple : Sty -> Sty -> Prop :=
+| StySubSimple_send : forall B S, StySubSimple S (send B S)
+| StySubSimple_recv : forall B S, StySubSimple S (recv B S)
+| StySubSimple_echoice1 : forall S1 S2, StySubSimple S1 (echoice S1 S2)
+| StySubSimple_echoice2 : forall S1 S2, StySubSimple S2 (echoice S1 S2)
+| StySubSimple_ichoice1 : forall S1 S2, StySubSimple S1 (ichoice S1 S2)
+| StySubSimple_ichoice2 : forall S1 S2, StySubSimple S2 (ichoice S1 S2)
+.
+Hint Constructors StySubSimple : stysub.
+
+Inductive StySub : Sty -> Sty -> Prop :=
+| StySub_StySubSimple : forall S S', StySubSimple S S' -> StySub S S'
+| StySub_mu : forall X S, StySub S (mu X S)
+.
+Hint Constructors StySub : stysub.

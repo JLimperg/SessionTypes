@@ -105,27 +105,20 @@ Hint Extern 2 (~ Free _ _) => apply Nonfree_shortcut : free.
 (* Closed automation *)
 
 
-Lemma Closed_shortcut :
-  (forall S B, Closed (send B S) -> Closed S) /\
-  (forall S B, Closed (recv B S) -> Closed S) /\
-  (forall S1 S2, Closed (echoice S1 S2) -> Closed S1 /\ Closed S2) /\
-  (forall S1 S2, Closed (ichoice S1 S2) -> Closed S1 /\ Closed S2).
+Lemma Closed_inv :
+  forall S S',
+  StySubSimple S S' ->
+  Closed S' ->
+  Closed S.
 Proof.
-  splits; introv H; unfold Closed in *; try split; intro Y; specialize H with Y;
-    contradict H; auto with free.
+  introv sub; inverts sub; introv H; unfold Closed in *; try split; intro Y;
+  specialize H with Y; contradict H; auto with free.
 Qed.
 
 Hint Extern 2 (Closed ?S) =>
-  let solve_using H :=
-    apply Closed_shortcut in H; try decompose_and H; assumption
-  in
   match goal with
-  | H : Closed (send _ S) |- _ => solve_using H
-  | H : Closed (recv _ S) |- _ => solve_using H
-  | H : Closed (echoice S _) |- _ => solve_using H
-  | H : Closed (echoice _ S) |- _ => solve_using H
-  | H : Closed (ichoice S _) |- _ => solve_using H
-  | H : Closed (ichoice _ S) |- _ => solve_using H
+  | H : Closed _ |- _ =>
+      solve [apply (Closed_inv S) in H; [assumption | auto with stysub]]
   end
 : free.
 

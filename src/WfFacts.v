@@ -9,17 +9,20 @@ Hint Resolve mu_unfold_preserves_wellformed : wf.
 
 
 Lemma wellformed_inv :
-  (forall B S, wellformed (send B S) -> wellformed S) /\
-  (forall B S, wellformed (recv B S) -> wellformed S) /\
-  (forall S1 S2, wellformed (echoice S1 S2) -> wellformed S1 /\ wellformed S2) /\
-  (forall S1 S2, wellformed (ichoice S1 S2) -> wellformed S1 /\ wellformed S2).
-Proof. splits; unfold wellformed; auto with contractive free. Qed.
+  forall S S',
+  StySubSimple S S' ->
+  wellformed S' ->
+  wellformed S.
+Proof.
+  introv sub; inverts1 sub; unfold wellformed in *;
+  auto with contractive free.
+Qed.
 
 
-Hint Extern 2 (wellformed _) =>
+Hint Extern 2 (wellformed ?S) =>
   match goal with
   | H : wellformed _ |- _ =>
-      solve [apply wellformed_inv in H; try (decompose_and H); assumption]
+      solve [apply (wellformed_inv S) in H; [exact H | auto with stysub]]
   end
 : wf.
 

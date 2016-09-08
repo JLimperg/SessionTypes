@@ -1,19 +1,23 @@
-Require Import Contractive Sty Shape.
+Require Import Contractive Sty Shape Tac.
 
 (******************************************************************************)
 (* Automation *)
 
 
+Lemma Contractive_inv :
+  forall S S',
+  StySub S S' ->
+  Contractive S' ->
+  Contractive S.
+Proof.
+  introv sub; inverts1 sub; [inverts1 sub|]; introv H; inverts H; auto.
+Qed.
+
+
 Hint Extern 2 (Contractive ?S) =>
-  let inv H := solve [inversion H; assumption] in
   match goal with
-  | H : Contractive (send _ S) |- _ => inv H
-  | H : Contractive (recv _ S) |- _ => inv H
-  | H : Contractive (echoice S _) |- _ => inv H
-  | H : Contractive (echoice _ S) |- _ => inv H
-  | H : Contractive (ichoice S _) |- _ => inv H
-  | H : Contractive (ichoice _ S) |- _ => inv H
-  | H : Contractive (mu _ S) |- _ => inv H
+  | H : Contractive _ |- _ =>
+      solve [apply (Contractive_inv S) in H; [exact H | auto with stysub]]
   end
 : contractive.
 
