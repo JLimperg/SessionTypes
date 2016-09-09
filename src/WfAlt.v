@@ -1,6 +1,10 @@
 Require Import Contractive ContractiveFacts Env Free FreeFacts Msg Shape Sty
   Tac Var Wf.
 
+
+Create HintDb wf' discriminated.
+
+
 Inductive Ok : Env -> Sty -> Prop :=
 | Ok_end :
     forall xs, Ok xs unit
@@ -37,8 +41,8 @@ with
       Ok xs ty ->
       Checked xs ty
 .
-Hint Constructors Ok : wf.
-Hint Constructors Checked : wf.
+Hint Constructors Ok : wf'.
+Hint Constructors Checked : wf'.
 
 Scheme Ok_ind_mut := Induction for Ok Sort Prop
 with Checked_ind_mut := Induction for Checked Sort Prop.
@@ -51,13 +55,18 @@ Lemma Ok_Checked_Contractive :
   (forall XS, Ok XS S -> Contractive S) /\
   (forall XS, Checked XS S -> Contractive S).
 Proof.
-  induction S; split; introv H; try (decompose_and IHS); constructor; inverts1 H;
-    repeat match goal with
-    | H : Checked _ _ |- _ => inverts H
-    end; try solve
-    [constructor | eauto 3 | inverts H; eauto].
-  - inverts H; simpl; autodiscriminate.
-  - inverts2 H; simpl; autodiscriminate.
+  induction S; split; introv H; try (decompose_and IHS); constructor;
+    inverts H;
+    try match goal with
+    | H : Ok _ _ |- _ => inverts H
+    end;
+    try match goal with
+    | |- shape _ <> varS => simpl; autodiscriminate
+    | |- Contractive _ => eauto 3 with wf'
+    end.
+  - inverts H4; simpl; autodiscriminate.
+Unshelve.
+  all: assumption.
 Qed.
 
 Lemma Ok_Contractive :
@@ -76,7 +85,7 @@ Lemma Wf'_Contractive :
   forall S,
   Wf' S ->
   Contractive S.
-Proof. unfold Wf'. intros. eauto using Ok_Contractive. Qed.
+Proof. unfold Wf'. intros. eapply Ok_Contractive. eassumption. Qed.
 
 
 Lemma Ok_Checked_Free :
@@ -88,22 +97,28 @@ Proof.
   induction S; introv HOk Henv; decompose_or_auto;
     auto with free;
     match goal with
-    | |- context [var _]     => idtac
-    | HOk : Ok _ _      |- _ => inverts1 HOk
-    | HOk : Checked _ _ |- _ => inverts2 HOk
-    end; eauto 6 with free.
-
-    introv H; inverts H; eapply IHS; eauto with free;
-    introv H; apply env_mem_add in H; auto.
-
-    introv H; inverts H; eapply IHS; eauto with free;
-    introv H; apply env_mem_add in H; auto.
-
-    inverts1 HOk.
-
-    inverts1 HOk.
-      introv H. inverts1 H. auto.
-      inverts HOk.
+    | |- ~ Free _ unit => auto with free
+    | |- ~ Free _ (var _) => idtac
+    | H : Ok _ _      |- _ => inverts1 H
+    | H : Checked _ _ |- _ => inverts2 H
+    end;
+    let solve_choice :=
+      intro H; inverts1 H; destruct H; gen H;
+      first [eapply IHS1 | eapply IHS2]; eauto with free
+    in
+    try match goal with
+    | |- ~ Free _ (mu _ _) =>
+        introv H; inverts H; eapply IHS; eauto with free;
+        introv H; apply env_mem_add in H; auto
+    | |- ~ Free _ (var _) => idtac
+    | |- ~ Free _ (echoice _ _) => solve_choice
+    | |- ~ Free _ (ichoice _ _) => solve_choice
+    | |- _ => intro H; eapply IHS; eauto with free
+    end.
+  - inverts1 HOk.
+  - inverts1 HOk.
+    * introv H. inverts1 H. auto.
+    * inverts HOk.
 Qed.
 
 
@@ -148,7 +163,8 @@ Proof.
   intros S XS. gen XS. induction S; introv H; (
     let finish :=
       constructor; first [apply IHS | apply IHS1 | apply IHS2];
-      auto with free contractive in
+      auto with free contractive
+    in
     split;
     [ try solve [constructor; finish]
     | introv Hsh; try solve [finish]
