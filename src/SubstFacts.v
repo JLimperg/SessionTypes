@@ -55,7 +55,7 @@ Proof.
 Qed.
 
 
-Lemma subst_preserves_free :
+Lemma subst_preserves_Free :
   forall S X Y R,
   X <> Y ->
   Free X S ->
@@ -68,7 +68,7 @@ Proof.
 Qed.
 
 
-Lemma subst_nonfree :
+Lemma subst_Nonfree :
   forall S X R,
   ~ Free X R ->
   ~ Free X (subst X R S).
@@ -93,7 +93,7 @@ Qed.
 
 
 (* TODO beautify *)
-Lemma free_subst_inversion :
+Lemma Free_subst_inversion :
   forall S X Y R,
   Free X (subst Y R S) ->
   Free X R \/ (X <> Y /\ Free X S).
@@ -119,19 +119,19 @@ Lemma subst_preserves_Closed :
   Closed (subst X R S).
 Proof.
   introv HS HR. unfold Closed in *. introv Hfree.
-  apply free_subst_inversion in Hfree. norm_hyp_auto; [eapply HR | eapply HS];
+  apply Free_subst_inversion in Hfree. norm_hyp_auto; [eapply HR | eapply HS];
     eauto.
 Qed.
 Hint Resolve subst_preserves_Closed : subst.
 
 
-Lemma subst_preserves_wellformed :
+Lemma subst_preserves_Wf :
   forall S X R,
-  wellformed S ->
-  wellformed R ->
-  wellformed (subst X R S).
+  Wf S ->
+  Wf R ->
+  Wf (subst X R S).
 Proof.
-  unfold wellformed. introv HS HR. norm_hyp_auto. split.
+  unfold Wf. introv HS HR. norm_hyp_auto. split.
   - assert (shape R <> varS) by (
       destruct R; simpl; try autodiscriminate; auto with free).
     auto with subst.
@@ -145,16 +145,16 @@ Lemma mu_unfold_preserves_Closed :
   Closed (subst X (mu X S) S).
 Proof.
   unfold Closed; introv H; intro Y; specialize H with Y; contradict H;
-  apply free_subst_inversion in H; auto with free.
+  apply Free_subst_inversion in H; auto with free.
 Qed.
 Hint Resolve mu_unfold_preserves_Closed : free.
 
 
-Lemma mu_unfold_preserves_wellformed :
+Lemma mu_unfold_preserves_Wf :
   forall S X,
-  wellformed (mu X S) ->
-  wellformed (subst X (mu X S) S).
-Proof. unfold wellformed. auto with contractive free. Qed.
+  Wf (mu X S) ->
+  Wf (subst X (mu X S) S).
+Proof. unfold Wf. auto with contractive free. Qed.
 
 
 Lemma lt_Sty_mu_prefix_subst :

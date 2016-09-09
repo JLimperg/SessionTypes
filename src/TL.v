@@ -1,4 +1,4 @@
-Require Import Contractive Sty Map Msg Tac Var Wf.
+Require Import Contractive Sty Map Msg Tac Var.
 
 
 Create HintDb tl discriminated.

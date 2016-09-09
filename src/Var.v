@@ -8,9 +8,9 @@ Inductive Var :=
 .
 Hint Constructors Var : env.
 
-Lemma eq_var_dec : forall (X Y : Var), {X = Y} + {X <> Y}.
+Lemma eq_Var_dec : forall (X Y : Var), {X = Y} + {X <> Y}.
 Proof. decide equality. apply eq_nat_dec. Defined.
-Hint Immediate eq_var_dec : env.
+Hint Immediate eq_Var_dec : env.
 
 Definition beq_var x y :=
   match (x, y) with
@@ -85,7 +85,7 @@ Module VarOrder <: OrderedType.
   .
 
   Definition eq_equiv := eq_equivalence (A := Var).
-  Definition eq_dec := eq_var_dec.
+  Definition eq_dec := eq_Var_dec.
 
   Instance lt_irreflexive : Irreflexive lt.
   Proof.

@@ -5,13 +5,13 @@ Require Import Morphisms Program.Basics.
 Create HintDb wf discriminated.
 
 
-Definition wellformed (S : Sty) := Contractive S /\ Closed S.
+Definition Wf (S : Sty) := Contractive S /\ Closed S.
 
 
-Definition wellformed_Contractive {S} (Swf : wellformed S) : Contractive S :=
+Definition Wf_Contractive {S} (Swf : Wf S) : Contractive S :=
   proj1 Swf
 .
 
-Definition wellformed_Closed {S} (Swf : wellformed S) : Closed S :=
+Definition Wf_Closed {S} (Swf : Wf S) : Closed S :=
   proj2 Swf
 .

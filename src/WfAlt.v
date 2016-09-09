@@ -1,96 +1,96 @@
 Require Import Contractive ContractiveFacts Env Free FreeFacts Msg Shape Sty
   Tac Var Wf.
 
-Inductive ok : Env -> Sty -> Prop :=
-| ok_end :
-    forall xs, ok xs unit
-| ok_send :
+Inductive Ok : Env -> Sty -> Prop :=
+| Ok_end :
+    forall xs, Ok xs unit
+| Ok_send :
     forall xs msg ty,
-    checked xs ty ->
-    ok xs (send msg ty)
-| ok_recv :
+    Checked xs ty ->
+    Ok xs (send msg ty)
+| Ok_recv :
     forall xs msg ty,
-    checked xs ty ->
-    ok xs (recv msg ty)
-| ok_ichoice :
+    Checked xs ty ->
+    Ok xs (recv msg ty)
+| Ok_ichoice :
     forall xs ty1 ty2,
-    checked xs ty1 ->
-    checked xs ty2 ->
-    ok xs (ichoice ty1 ty2)
-| ok_echoice :
+    Checked xs ty1 ->
+    Checked xs ty2 ->
+    Ok xs (ichoice ty1 ty2)
+| Ok_echoice :
     forall xs ty1 ty2,
-    checked xs ty1 ->
-    checked xs ty2 ->
-    ok xs (echoice ty1 ty2)
-| ok_mu :
+    Checked xs ty1 ->
+    Checked xs ty2 ->
+    Ok xs (echoice ty1 ty2)
+| Ok_mu :
     forall x xs ty,
-    ok (env_add x xs) ty ->
-    ok xs (mu x ty)
+    Ok (env_add x xs) ty ->
+    Ok xs (mu x ty)
 with
-  checked : Env -> Sty -> Prop :=
-  | checked_var :
+  Checked : Env -> Sty -> Prop :=
+  | Checked_var :
       forall x xs,
       env_mem x xs ->
-      checked xs (var x)
-  | checked_ok :
+      Checked xs (var x)
+  | Checked_Ok :
       forall xs ty,
-      ok xs ty ->
-      checked xs ty
+      Ok xs ty ->
+      Checked xs ty
 .
-Hint Constructors ok : wf.
-Hint Constructors checked : wf.
+Hint Constructors Ok : wf.
+Hint Constructors Checked : wf.
 
-Scheme ok_ind_mut := Induction for ok Sort Prop
-with checked_ind_mut := Induction for checked Sort Prop.
+Scheme Ok_ind_mut := Induction for Ok Sort Prop
+with Checked_ind_mut := Induction for Checked Sort Prop.
 
-Definition wellformed' S := ok env_empty S.
+Definition Wf' S := Ok env_empty S.
 
 
-Lemma ok_checked_Contractive :
+Lemma Ok_Checked_Contractive :
   forall S,
-  (forall XS, ok XS S -> Contractive S) /\
-  (forall XS, checked XS S -> Contractive S).
+  (forall XS, Ok XS S -> Contractive S) /\
+  (forall XS, Checked XS S -> Contractive S).
 Proof.
   induction S; split; introv H; try (decompose_and IHS); constructor; inverts1 H;
     repeat match goal with
-    | H : checked _ _ |- _ => inverts H
+    | H : Checked _ _ |- _ => inverts H
     end; try solve
     [constructor | eauto 3 | inverts H; eauto].
   - inverts H; simpl; autodiscriminate.
   - inverts2 H; simpl; autodiscriminate.
 Qed.
 
-Lemma ok_Contractive :
+Lemma Ok_Contractive :
   forall S XS,
-  ok XS S ->
+  Ok XS S ->
   Contractive S.
-Proof. introv H. pose proof (ok_checked_Contractive S). jauto. Qed.
+Proof. introv H. pose proof (Ok_Checked_Contractive S). jauto. Qed.
 
-Lemma checked_Contractive :
+Lemma Checked_Contractive :
   forall S XS,
-  checked XS S ->
+  Checked XS S ->
   Contractive S.
-Proof. introv H. pose proof (ok_checked_Contractive S). jauto. Qed.
+Proof. introv H. pose proof (Ok_Checked_Contractive S). jauto. Qed.
 
-Lemma wellformed'_Contractive :
+Lemma Wf'_Contractive :
   forall S,
-  wellformed' S ->
+  Wf' S ->
   Contractive S.
-Proof. unfold wellformed'. intros. eauto using ok_Contractive. Qed.
+Proof. unfold Wf'. intros. eauto using Ok_Contractive. Qed.
 
 
-Lemma ok_checked_free :
+Lemma Ok_Checked_Free :
   forall S X XS,
-  ok XS S \/ checked XS S ->
+  Ok XS S \/ Checked XS S ->
   ~ env_mem X XS ->
   ~ Free X S.
 Proof.
-  induction S; introv Hok Henv; decompose_or_auto;
+  induction S; introv HOk Henv; decompose_or_auto;
     auto with free;
     match goal with
     | |- context [var _]     => idtac
-    | Hok : ok _ _      |- _ => inverts1 Hok
-    | Hok : checked _ _ |- _ => inverts2 Hok
+    | HOk : Ok _ _      |- _ => inverts1 HOk
+    | HOk : Checked _ _ |- _ => inverts2 HOk
     end; eauto 6 with free.
 
     introv H; inverts H; eapply IHS; eauto with free;
@@ -99,51 +99,51 @@ Proof.
     introv H; inverts H; eapply IHS; eauto with free;
     introv H; apply env_mem_add in H; auto.
 
-    inverts1 Hok.
+    inverts1 HOk.
 
-    inverts1 Hok.
+    inverts1 HOk.
       introv H. inverts1 H. auto.
-      inverts Hok.
+      inverts HOk.
 Qed.
 
 
-Lemma ok_free :
+Lemma Ok_Free :
   forall S X XS,
-  ok XS S ->
+  Ok XS S ->
   ~ env_mem X XS ->
   ~ Free X S.
-Proof. intros. eapply ok_checked_free; eauto. Qed.
+Proof. intros. eapply Ok_Checked_Free; eauto. Qed.
 
 
-Lemma checked_free :
+Lemma Checked_Free :
   forall S X XS,
-  checked XS S ->
+  Checked XS S ->
   ~ env_mem X XS ->
   ~ Free X S.
-Proof. intros. eapply ok_checked_free; eauto. Qed.
+Proof. intros. eapply Ok_Checked_Free; eauto. Qed.
 
 
-Lemma wellformed'_closed : forall S, wellformed' S -> Closed S.
+Lemma Wf'_closed : forall S, Wf' S -> Closed S.
 Proof.
-  unfold wellformed'. unfold Closed. intros S Hwf X. eapply ok_free;
+  unfold Wf'. unfold Closed. intros S Hwf X. eapply Ok_Free;
     eauto with env.
 Qed.
 
 
-Lemma wellformed'_wellformed :
+Lemma Wf'_Wf :
   forall S,
-  wellformed' S -> wellformed S.
+  Wf' S -> Wf S.
 Proof.
   introv H. unfolds. split;
-  auto using wellformed'_Contractive, wellformed'_closed.
+  auto using Wf'_Contractive, Wf'_closed.
 Qed.
 
 
-Lemma free_contractive_checked_ok :
+Lemma Free_contractive_Checked_Ok :
   forall S XS,
   (forall X, Free X S -> env_mem X XS) ->
   Contractive S ->
-  checked XS S /\ (shape S <> varS -> ok XS S).
+  Checked XS S /\ (shape S <> varS -> Ok XS S).
 Proof.
   intros S XS. gen XS. induction S; introv H; (
     let finish :=
@@ -155,11 +155,11 @@ Proof.
     ]
   ).
   - constructor. constructor. apply IHS; [|auto with contractive..].
-    * introv Hfree. destruct (eq_var_dec X v) as [Heq | Hneq].
+    * introv Hfree. destruct (eq_Var_dec X v) as [Heq | Hneq].
       + subst. apply env_add_mem'.
       + apply env_add_mem. auto with free.
   - constructor. apply IHS; [|auto with contractive..].
-    * introv Hfree. destruct (eq_var_dec X v) as [Heq | Hneq].
+    * introv Hfree. destruct (eq_Var_dec X v) as [Heq | Hneq].
       + subst. apply env_add_mem'.
       + apply env_add_mem. auto with free.
   - constructor. auto with free.
@@ -167,23 +167,23 @@ Proof.
 Qed.
 
 
-Lemma wellformed_wellformed' :
+Lemma Wf_Wf' :
   forall S,
-  wellformed S -> wellformed' S.
+  Wf S -> Wf' S.
 Proof.
   introv H. inversion H as [Hcontractive Hclosed].
-  apply free_contractive_checked_ok.
+  apply Free_contractive_Checked_Ok.
   - introv Hfree. contradict Hfree. auto with free.
   - assumption.
   - destruct S; simpl; try autodiscriminate; auto with free.
 Qed.
 
 
-Lemma wellformed'_iff_wellformed : 
+Lemma Wf'_iff_Wf : 
   forall S,
-  wellformed S <-> wellformed' S.
+  Wf S <-> Wf' S.
 Proof.
   intros. split.
-  - apply wellformed_wellformed'.
-  - apply wellformed'_wellformed.
+  - apply Wf_Wf'.
+  - apply Wf'_Wf.
 Qed.

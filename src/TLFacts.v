@@ -1,5 +1,5 @@
 Require Import Contractive Env Free FreeFacts Map Msg Sty Shape
-  Subst SubstFacts Tac TL Var Wf.
+  Subst SubstFacts Tac TL Var.
 Require Import FunctionalExtensionality.
 
 
@@ -94,7 +94,7 @@ Proof.
     | first [erewrite IHS | erewrite IHS1, IHS2]; eauto with free
     ].
   - fequal. extensionality lx. apply IHS.
-    * introv Hfree. destruct (eq_var_dec v X).
+    * introv Hfree. destruct (eq_Var_dec v X).
       + subst. rewrite_all eta_override_same. reflexivity.
       + rewrite_all eta_override_different; [|assumption..]. apply Heq.
         auto with free.

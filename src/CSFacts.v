@@ -35,117 +35,117 @@ Hint Extern 1 =>
 : subst.
 
 
-Lemma cs_preserves_sequiv :
+Lemma cs_preserves_Sequiv :
   forall S S',
   Contractive S ->
   Contractive S' ->
-  sequiv S S' ->
-  sequiv (cs S) (cs S').
+  Sequiv S S' ->
+  Sequiv (cs S) (cs S').
 Proof.
   apply (
     Sty_ind_mu_prefix2 (fun S S' =>
       Contractive S ->
       Contractive S' ->
-      sequiv S S' ->
-      sequiv (cs S) (cs S'))
+      Sequiv S S' ->
+      Sequiv (cs S) (cs S'))
   ).
   introv IH Hcontr Hcontr' Heq. inverts2 Heq; cs_simpl;
     eauto 10 with contractive subst.
 Qed.
 
 
-Lemma uncs_preserves_sequiv_l :
+Lemma uncs_preserves_Sequiv_l :
   forall S S',
   Contractive S ->
-  sequiv (cs S) S' ->
-  sequiv S S'.
+  Sequiv (cs S) S' ->
+  Sequiv S S'.
 Proof.
   induction S using (well_founded_ind lt_Sty_mu_prefix_wf);
     intros; destruct S; cs_simpl; eauto 10 with contractive subst.
 Qed.
 
 
-Lemma uncs_preserves_sequiv_r :
+Lemma uncs_preserves_Sequiv_r :
   forall S S',
   Contractive S' ->
-  sequiv S (cs S') ->
-  sequiv S S'.
+  Sequiv S (cs S') ->
+  Sequiv S S'.
 Proof.
-  introv Hcontr H. apply sequiv_symmetric. apply sequiv_symmetric in H.
-  apply uncs_preserves_sequiv_l; assumption.
+  introv Hcontr H. apply Sequiv_symmetric. apply Sequiv_symmetric in H.
+  apply uncs_preserves_Sequiv_l; assumption.
 Qed.
 
 
-Lemma uncs_preserves_sequiv :
+Lemma uncs_preserves_Sequiv :
   forall S S',
   Contractive S ->
   Contractive S' ->
-  sequiv (cs S) (cs S') ->
-  sequiv S S'.
+  Sequiv (cs S) (cs S') ->
+  Sequiv S S'.
 Proof.
-  intros. eapply uncs_preserves_sequiv_l; eauto.
-  eapply uncs_preserves_sequiv_r; eauto.
+  intros. eapply uncs_preserves_Sequiv_l; eauto.
+  eapply uncs_preserves_Sequiv_r; eauto.
 Qed.
 
 
-Lemma cs_preserves_sequiv_l :
+Lemma cs_preserves_Sequiv_l :
   forall S S',
   Contractive S ->
   Contractive S' ->
-  sequiv S S' ->
-  sequiv (cs S) S'.
+  Sequiv S S' ->
+  Sequiv (cs S) S'.
 Proof.
-  intros. eapply uncs_preserves_sequiv_r; eauto.
-  eapply cs_preserves_sequiv; eauto.
+  intros. eapply uncs_preserves_Sequiv_r; eauto.
+  eapply cs_preserves_Sequiv; eauto.
 Qed.
 
 
-Lemma cs_preserves_sequiv_r :
+Lemma cs_preserves_Sequiv_r :
   forall S S',
   Contractive S ->
   Contractive S' ->
-  sequiv S S' ->
-  sequiv S (cs S').
+  Sequiv S S' ->
+  Sequiv S (cs S').
 Proof.
-  intros. eapply uncs_preserves_sequiv_l; eauto.
-  eapply cs_preserves_sequiv; eauto.
+  intros. eapply uncs_preserves_Sequiv_l; eauto.
+  eapply cs_preserves_Sequiv; eauto.
 Qed.
 
 
-Lemma cs_preserves_not_sequiv :
+Lemma cs_preserves_not_Sequiv :
   forall S S',
   Contractive S ->
   Contractive S' ->
-  ~ sequiv S S' ->
-  ~ sequiv (cs S) (cs S').
+  ~ Sequiv S S' ->
+  ~ Sequiv (cs S) (cs S').
 Proof.
-  introv Hok Hok' H contra. apply H. eapply uncs_preserves_sequiv; eauto.
+  introv Hok Hok' H contra. apply H. eapply uncs_preserves_Sequiv; eauto.
 Qed.
 
 
-Lemma uncs_preserves_not_sequiv :
+Lemma uncs_preserves_not_Sequiv :
   forall S S',
   Contractive S ->
   Contractive S' ->
-  ~ sequiv (cs S) (cs S') ->
-  ~ sequiv S S'.
+  ~ Sequiv (cs S) (cs S') ->
+  ~ Sequiv S S'.
 Proof.
-  introv Hok Hok' H contra. apply H. eapply cs_preserves_sequiv; eauto.
+  introv Hok Hok' H contra. apply H. eapply cs_preserves_Sequiv; eauto.
 Qed.
 
 
-Lemma cs_preserves_nsequiv :
+Lemma cs_preserves_NSequiv :
   forall S S',
   Contractive S ->
   Contractive S' ->
-  nsequiv S S' ->
-  nsequiv (cs S) (cs S').
+  NSequiv S S' ->
+  NSequiv (cs S) (cs S').
 Proof.
   apply (Sty_ind_mu_prefix2 (fun S S' =>
     Contractive S ->
     Contractive S' ->
-    nsequiv S S' ->
-    nsequiv (cs S) (cs S')
+    NSequiv S S' ->
+    NSequiv (cs S) (cs S')
   )).
   introv IH Hok Hok' Hneq. inverts Hneq; try cs_simpl;
     eauto 10 with contractive subst nsequiv.
@@ -153,18 +153,18 @@ Proof.
 Qed.
 
 
-Lemma uncs_preserves_nsequiv :
+Lemma uncs_preserves_NSequiv :
   forall S S',
   Contractive S ->
   Contractive S' ->
-  nsequiv (cs S) (cs S') ->
-  nsequiv S S'.
+  NSequiv (cs S) (cs S') ->
+  NSequiv S S'.
 Proof.
   apply (Sty_ind_mu_prefix2 (fun S S' =>
     Contractive S ->
     Contractive S' ->
-    nsequiv (cs S) (cs S') ->
-    nsequiv S S'
+    NSequiv (cs S) (cs S') ->
+    NSequiv S S'
   )).
   introv IH Hok Hok' Hneq. destruct S; destruct S'; solve
     [ cs_simpl; auto
@@ -185,15 +185,15 @@ Qed.
 Hint Resolve cs_preserves_Contractive : subst.
 
 
-Lemma cs_preserves_wellformed :
+Lemma cs_preserves_Wf :
   forall S,
-  wellformed S ->
-  wellformed (cs S).
+  Wf S ->
+  Wf (cs S).
 Proof.
-  unfold wellformed. induction S using (well_founded_ind lt_Sty_mu_prefix_wf);
+  unfold Wf. induction S using (well_founded_ind lt_Sty_mu_prefix_wf);
     introv Hwf; destruct S; cs_simpl; eauto 10 with contractive free subst.
 Qed.
-Hint Resolve cs_preserves_wellformed : subst.
+Hint Resolve cs_preserves_Wf : subst.
 
 
 Lemma tl_eq :
@@ -207,12 +207,12 @@ Qed.
 
 Lemma cs_preserves_tl :
   forall S eta c c',
-  wellformed S ->
+  Wf S ->
   tl eta S c = tl eta (cs S) c'.
 Proof.
   intros S eta. induction S using (well_founded_ind lt_Sty_mu_prefix_wf);
     introv Hwf; destruct S; try solve [apply tl_eq; cs_simpl; reflexivity];
-    unfold wellformed in *; norm_hyp_auto.
+    unfold Wf in *; norm_hyp_auto.
   - erewrite tl_mu_subst. erewrite H with (y := subst v (mu v S) S).
     apply tl_eq. cs_simpl. reflexivity.
     all: auto 10 with contractive subst free.

@@ -1,4 +1,4 @@
-Require Import Env Free Sty Subst Tac Var Wf.
+Require Import Env Free Sty Subst Tac Var.
 
 (* -------------------------------------------------------------------------- *)
 (* Absurdities *)
@@ -61,7 +61,7 @@ Hint Extern 1 (?X1 = ?Y1) =>
 : free.
 
 
-Ltac free_inv_auto X S :=
+Ltac Free_inv_auto X S :=
   match goal with
   | H : Free X unit |- _ => inverts H
   | H : Free X (send _ S) |- _ => inverts H
@@ -75,7 +75,7 @@ Ltac free_inv_auto X S :=
 .
 
 Hint Extern 4 (Free ?X ?S) =>
-  free_inv_auto X S
+  Free_inv_auto X S
 : free.
 
 
@@ -136,25 +136,5 @@ Proof.
       end
     );
     auto with free;
-    destruct (eq_var_dec X v); subst; auto with free.
+    destruct (eq_Var_dec X v); subst; auto with free.
 Defined.
-
-
-Lemma eta_irrelevant_helper :
-  forall (P : Prop),
-  (forall B S,
-    (forall X, Free X (send B S) -> P) ->
-    (forall X, Free X S -> P)) /\
-  (forall B S,
-    (forall X, Free X (recv B S) -> P) ->
-    (forall X, Free X S -> P)) /\
-  (forall S1 S2,
-    (forall X, Free X (echoice S1 S2) -> P) ->
-    (forall X, Free X S1 -> P) /\ (forall X, Free X S2 -> P)) /\
-  (forall S1 S2,
-    (forall X, Free X (ichoice S1 S2) -> P) ->
-    (forall X, Free X S1 -> P) /\ (forall X, Free X S2 -> P)) /\
-  (forall Y S,
-    (forall X, Free X (mu Y S) -> P) ->
-    (forall X, X <> Y -> Free X S -> P)).
-Proof. intuition (eauto with free). Qed.

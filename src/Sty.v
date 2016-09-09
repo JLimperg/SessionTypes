@@ -14,7 +14,7 @@ Inductive Sty : Set :=
 Lemma eq_Sty_dec :
   forall (S T : Sty), {S = T} + {S <> T}.
 Proof.
-  pose proof eq_Msg_dec. pose proof eq_var_dec. decide equality; auto.
+  pose proof eq_Msg_dec. pose proof eq_Var_dec. decide equality; auto.
 Defined.
 
 Fixpoint beq_Sty (S T : Sty) : bool :=

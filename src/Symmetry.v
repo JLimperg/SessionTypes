@@ -11,10 +11,10 @@ Proof.
   intros R H1 x y H2. apply H1. constructor. assumption.
 Qed.
 
-Theorem sequiv_symmetric : forall S S',
-  sequiv S S' -> sequiv S' S.
+Theorem Sequiv_symmetric : forall S S',
+  Sequiv S S' -> Sequiv S' S.
 Proof with auto.
-  apply symmetric_closure_symmetry. apply sequiv_coind.
+  apply symmetric_closure_symmetry. apply Sequiv_coind.
   intros S S' H.
   inversion_clear H. inversion_clear H0.
   inversion H; constructor; subst; constructor...

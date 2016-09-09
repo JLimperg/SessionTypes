@@ -10,7 +10,7 @@ Definition override
   fun x => if eq_dec x y then y' else f x.
 Hint Unfold override : tl.
 
-Notation eta_override := (override eq_var_dec).
+Notation eta_override := (override eq_Var_dec).
 
 
 Lemma override_exchange :

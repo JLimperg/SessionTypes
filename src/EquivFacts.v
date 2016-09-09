@@ -5,10 +5,10 @@ Require Import TLC.LibRelation TLC.LibLogic.
 (* --------------------------------------------------------------------------*)
 (* Automation *)
 
-Lemma sequiv_var_absurd_l :
+Lemma Sequiv_var_absurd_l :
   forall S X,
   Contractive S ->
-  ~ sequiv (var X) S.
+  ~ Sequiv (var X) S.
 Proof.
   induction S using (well_founded_ind lt_Sty_mu_prefix_wf);
     introv Hcontr contra; inverts2 contra.
@@ -17,70 +17,70 @@ Qed.
 
 Hint Extern 4 =>
   match goal with
-  | H : sequiv (var ?X) ?S |- _ =>
-      exfalso; apply (sequiv_var_absurd_l S X); [|assumption]
+  | H : Sequiv (var ?X) ?S |- _ =>
+      exfalso; apply (Sequiv_var_absurd_l S X); [|assumption]
   end
 .
 
 
-Lemma sequiv_var_absurd_r :
+Lemma Sequiv_var_absurd_r :
   forall S X,
   Contractive S ->
-  ~ sequiv S (var X).
-Proof. introv Hok contra. apply sequiv_symmetric in contra. auto. Qed.
+  ~ Sequiv S (var X).
+Proof. introv Hok contra. apply Sequiv_symmetric in contra. auto. Qed.
 
 Hint Extern 4 =>
   match goal with
-  | H : sequiv ?S (var ?X) |- _ =>
-      exfalso; apply (sequiv_var_absurd_r S X); [|assumption]
+  | H : Sequiv ?S (var ?X) |- _ =>
+      exfalso; apply (Sequiv_var_absurd_r S X); [|assumption]
   end
 .
 
 
 (* --------------------------------------------------------------------------*)
-(* nsequiv -> ~ sequiv *)
+(* NSequiv -> ~ Sequiv *)
 
 
-Lemma nsequiv_not_sequiv :
+Lemma NSequiv_not_Sequiv :
   forall S S',
   Contractive S ->
   Contractive S' ->
-  nsequiv S S' ->
-  ~ sequiv S S'.
+  NSequiv S S' ->
+  ~ Sequiv S S'.
 Proof.
   introv Hok Hok' H. induction H; introv contra; try solve
     [ inverts2 contra; auto
     | inverts2 contra; inverts Hok; inverts Hok';
       unfold not in *; eauto with nsequiv
     ].
-  - apply cs_preserves_sequiv_r in contra; inverts2 contra;
-    [apply IHnsequiv|..];
-    auto using uncs_preserves_sequiv_r with contractive subst.
-  - apply cs_preserves_sequiv_l in contra; inverts2 contra;
-    [|apply IHnsequiv|..];
-    auto using uncs_preserves_sequiv_l with contractive subst.
+  - apply cs_preserves_Sequiv_r in contra; inverts2 contra;
+    [apply IHNSequiv|..];
+    auto using uncs_preserves_Sequiv_r with contractive subst.
+  - apply cs_preserves_Sequiv_l in contra; inverts2 contra;
+    [|apply IHNSequiv|..];
+    auto using uncs_preserves_Sequiv_l with contractive subst.
 Qed.
 
 
 (* --------------------------------------------------------------------------*)
-(* ~ nsequiv -> sequiv *)
+(* ~ NSequiv -> Sequiv *)
 
 
-Inductive R_not_nsequiv_sequiv : Sty -> Sty -> Prop :=
-| R_not_nsequiv_sequiv_intro :
+Inductive R_not_NSequiv_Sequiv : Sty -> Sty -> Prop :=
+| R_not_NSequiv_Sequiv_intro :
     forall S S',
     Closed S ->
     Closed S' ->
-    ~ nsequiv S S' ->
-    R_not_nsequiv_sequiv S S'
+    ~ NSequiv S S' ->
+    R_not_NSequiv_Sequiv S S'
 .
-Hint Constructors R_not_nsequiv_sequiv : nsequiv.
+Hint Constructors R_not_NSequiv_Sequiv : nsequiv.
 
 
-Lemma not_nsequiv_sequiv' :
+Lemma not_NSequiv_Sequiv' :
   forall S S',
-  R_not_nsequiv_sequiv S S' ->
-  sequiv_gen R_not_nsequiv_sequiv S S'.
+  R_not_NSequiv_Sequiv S S' ->
+  Sequiv_gen R_not_NSequiv_Sequiv S S'.
 Proof.
   introv H. inverts H as Hcl Hcl' H. destruct S; destruct S'; try solve
     [ exfalso; apply H; constructor; intro; discriminate ];
@@ -91,29 +91,29 @@ Proof.
     auto 8 with free nsequiv.
 Qed.
 
-Lemma not_nsequiv_sequiv :
+Lemma not_NSequiv_Sequiv :
   forall S S',
   Closed S ->
   Closed S' ->
-  ~ nsequiv S S' ->
-  sequiv S S'.
+  ~ NSequiv S S' ->
+  Sequiv S S'.
 Proof.
-  intros. apply sequiv_coind with (R := R_not_nsequiv_sequiv);
-  auto using not_nsequiv_sequiv' with nsequiv.
+  intros. apply Sequiv_coind with (R := R_not_NSequiv_Sequiv);
+  auto using not_NSequiv_Sequiv' with nsequiv.
 Qed.
 
 
 (* --------------------------------------------------------------------------*)
-(* nsequiv <-> ~ sequiv *)
+(* NSequiv <-> ~ Sequiv *)
 
-Lemma nsequiv_not_sequiv_iff :
+Lemma NSequiv_iff_not_Sequiv :
   forall S S',
-  wellformed S ->
-  wellformed S' ->
-  (nsequiv S S' <-> ~ sequiv S S').
+  Wf S ->
+  Wf S' ->
+  (NSequiv S S' <-> ~ Sequiv S S').
 Proof.
-  introv Hok Hok'. split; introv H; unfold wellformed in *.
-  + eapply nsequiv_not_sequiv; eauto.
+  introv Hok Hok'. split; introv H; unfold Wf in *.
+  + eapply NSequiv_not_Sequiv; eauto.
   + gen H. apply contrapose_elim. introv H. apply not_not_intro.
-    apply not_nsequiv_sequiv; auto.
+    apply not_NSequiv_Sequiv; auto.
 Qed.
