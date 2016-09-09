@@ -69,8 +69,8 @@ Inductive R_equivalence_trace_bisim' : Tl -> Tl -> Prop :=
 | R_equivalence_trace_bisim'_intro :
     forall l l' eta,
     (exists S S' c c',
-     tl eta (cs S) c = l /\
-     tl eta (cs S') c' = l' /\
+     l = tl eta (cs S) c /\
+     l' = tl eta (cs S') c' /\
      Wf S /\
      Wf S' /\
      Sequiv (cs S) (cs S')
@@ -79,7 +79,7 @@ Inductive R_equivalence_trace_bisim' : Tl -> Tl -> Prop :=
 .
 
 
-(* TODO ouch *)
+(* TODO beautify *)
 Lemma equivalence_trace_bisim' :
   forall S S' eta c c',
   Wf S ->
@@ -94,84 +94,45 @@ Proof.
     clear Htmp
   .
 
+  Ltac finish :=
+    simpl; constructor; econstructor; eauto 15 with subst wf
+  .
+
   intros. (rewrite_strat (subterms cs_preserves_tl)); try assumption.
-  apply Tl_bisim_coind with (R := R_equivalence_trace_bisim').
-  - clear. introv CIH. inverts1 CIH. norm_hyp_auto.
-    rename H0 into Hwf. rename H2 into Hwf'. rename H4 into HSequiv.
-    subst. inverts2 HSequiv.
-    * gen c c' Hwf Hwf'. rewrite <- HSequiv. rewrite <- H2.
-      clear HSequiv. intros. constructor.
-    * gen c c' Hwf Hwf'. rewrite <- H0. rewrite <- H1.
-      introv Hwf Hwf'.
-      wf_inv (send B S0) H0 S0.
-      wf_inv (send B S'0) H1 S'0.
-      simpl. constructor. econstructor.
-      exists S0 S'0. eexists. eexists. splits.
-      + symmetry. apply cs_preserves_tl. assumption.
-      + symmetry. apply cs_preserves_tl. assumption.
-      + assumption.
-      + assumption.
-      + apply cs_preserves_Sequiv; eauto with wf.
-    * gen c c' Hwf Hwf'. rewrite <- H0. rewrite <- H1.
-      introv Hwf Hwf'.
-      wf_inv (recv B S0) H0 S0.
-      wf_inv (recv B S'0) H1 S'0.
-      simpl. constructor. econstructor.
-      exists S0 S'0. eexists. eexists. splits.
-      + symmetry. apply cs_preserves_tl. assumption.
-      + symmetry. apply cs_preserves_tl. assumption.
-      + assumption.
-      + assumption.
-      + apply cs_preserves_Sequiv; eauto with wf.
-    * gen c c' Hwf Hwf'. rewrite <- H0. rewrite <- H1.
-      introv Hwf Hwf'.
-      wf_inv (echoice S1 S2) H0 S1.
-      wf_inv (echoice S1 S2) H0 S2.
-      wf_inv (echoice S1' S2') H1 S1'.
-      wf_inv (echoice S1' S2') H1 S2'.
-      simpl. constructor.
-      + econstructor. exists S1. exists S1'. eexists. eexists. splits.
-        -- symmetry. apply cs_preserves_tl. assumption.
-        -- symmetry. apply cs_preserves_tl. assumption.
-        -- assumption.
-        -- assumption.
-        -- apply cs_preserves_Sequiv; eauto with wf.
-      + econstructor. exists S2. exists S2'. eexists. eexists. splits.
-        -- symmetry. apply cs_preserves_tl. assumption.
-        -- symmetry. apply cs_preserves_tl. assumption.
-        -- assumption.
-        -- assumption.
-        -- apply cs_preserves_Sequiv; eauto with wf.
-    * gen c c' Hwf Hwf'. rewrite <- H0. rewrite <- H1.
-      introv Hwf Hwf'.
-      wf_inv (ichoice S1 S2) H0 S1.
-      wf_inv (ichoice S1 S2) H0 S2.
-      wf_inv (ichoice S1' S2') H1 S1'.
-      wf_inv (ichoice S1' S2') H1 S2'.
-      simpl. constructor.
-      + econstructor. exists S1. exists S1'. eexists. eexists. splits.
-        -- symmetry. apply cs_preserves_tl. assumption.
-        -- symmetry. apply cs_preserves_tl. assumption.
-        -- assumption.
-        -- assumption.
-        -- apply cs_preserves_Sequiv; eauto with wf.
-      + econstructor. exists S2. exists S2'. eexists. eexists. splits.
-        -- symmetry. apply cs_preserves_tl. assumption.
-        -- symmetry. apply cs_preserves_tl. assumption.
-        -- assumption.
-        -- assumption.
-        -- apply cs_preserves_Sequiv; eauto with wf.
-    * symmetry in H0. apply cs_mu_absurd in H0.
-      + contradiction.
-      + eauto with contractive wf.
-    * symmetry in H0. apply cs_mu_absurd in H0.
-      + contradiction.
-      + eauto with contractive wf.
-  - econstructor. exists S. exists S'. eexists. eexists. splits;
-    auto with subst.
-    * apply cs_preserves_Sequiv; assumption.
+  apply Tl_bisim_coind with (R := R_equivalence_trace_bisim');
+    [|econstructor; eauto 10 with subst]; clear.
+
+  introv CIH. inverts1 CIH. norm_hyp_auto.
+  rename H0 into Hwf. rename H2 into Hwf'. rename H4 into HSequiv. subst.
+  inverts2 HSequiv.
+  - gen c c' Hwf Hwf'. rewrite <- HSequiv. rewrite <- H2.
+    constructor.
+  - gen c c' Hwf Hwf'. rewrite <- H0. rewrite <- H1. intros.
+    wf_inv (send B S0) H0 S0.
+    wf_inv (send B S'0) H1 S'0.
+    finish.
+  - gen c c' Hwf Hwf'. rewrite <- H0. rewrite <- H1. intros.
+    wf_inv (recv B S0) H0 S0.
+    wf_inv (recv B S'0) H1 S'0.
+    finish.
+  - gen c c' Hwf Hwf'. rewrite <- H0. rewrite <- H1. intros.
+    wf_inv (echoice S1 S2) H0 S1.
+    wf_inv (echoice S1 S2) H0 S2.
+    wf_inv (echoice S1' S2') H1 S1'.
+    wf_inv (echoice S1' S2') H1 S2'.
+    finish.
+  - gen c c' Hwf Hwf'. rewrite <- H0. rewrite <- H1. intros.
+    wf_inv (ichoice S1 S2) H0 S1.
+    wf_inv (ichoice S1 S2) H0 S2.
+    wf_inv (ichoice S1' S2') H1 S1'.
+    wf_inv (ichoice S1' S2') H1 S2'.
+    finish.
+  - auto with subst wf.
+  - auto with subst wf.
 Unshelve.
   all: auto with wf.
+Grab Existential Variables.
+  all: auto with subst.
 Qed.
 
 Theorem equivalence_trace_bisim :

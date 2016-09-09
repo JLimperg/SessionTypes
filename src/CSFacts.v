@@ -52,6 +52,7 @@ Proof.
   introv IH Hcontr Hcontr' Heq. inverts2 Heq; cs_simpl;
     eauto 10 with contractive subst.
 Qed.
+Hint Resolve cs_preserves_Sequiv : subst.
 
 
 Lemma uncs_preserves_Sequiv_l :
@@ -218,3 +219,4 @@ Proof.
 Unshelve.
   all: auto with contractive subst.
 Qed.
+Hint Resolve cs_preserves_tl : subst.
