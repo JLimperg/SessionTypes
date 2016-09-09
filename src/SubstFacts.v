@@ -155,6 +155,7 @@ Lemma mu_unfold_preserves_Wf :
   Wf (mu X S) ->
   Wf (subst X (mu X S) S).
 Proof. unfold Wf. auto with contractive free. Qed.
+Hint Resolve mu_unfold_preserves_Wf : wf.
 
 
 Lemma lt_Sty_mu_prefix_subst :

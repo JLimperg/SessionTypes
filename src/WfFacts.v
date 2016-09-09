@@ -1,11 +1,4 @@
-Require Import Contractive ContractiveFacts CSFacts Free FreeFacts SubstFacts
-  Sty Tac Wf.
-
-
-Hint Resolve cs_preserves_Wf : wf.
-Hint Resolve Wf_Contractive : wf.
-Hint Resolve Wf_Closed : wf.
-Hint Resolve mu_unfold_preserves_Wf : wf.
+Require Import Contractive ContractiveFacts Free FreeFacts Sty Tac Wf.
 
 
 Lemma Wf_inv :

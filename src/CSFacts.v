@@ -1,5 +1,5 @@
 Require Import CS Contractive ContractiveFacts Equiv NonEquiv Shape ShapeFacts
-  Sty StyInd Subst SubstFacts Tac TL TLFacts Wf.
+  Sty StyInd Subst SubstFacts Tac TL TLFacts Wf WfFacts.
 
 
 Lemma cs_shape :
@@ -190,10 +190,10 @@ Lemma cs_preserves_Wf :
   Wf S ->
   Wf (cs S).
 Proof.
-  unfold Wf. induction S using (well_founded_ind lt_Sty_mu_prefix_wf);
-    introv Hwf; destruct S; cs_simpl; eauto 10 with contractive free subst.
+  induction S using (well_founded_ind lt_Sty_mu_prefix_wf);
+    introv Hwf; destruct S; cs_simpl; auto with subst wf.
 Qed.
-Hint Resolve cs_preserves_Wf : subst.
+Hint Resolve cs_preserves_Wf : subst wf.
 
 
 Lemma tl_eq :
@@ -211,11 +211,10 @@ Lemma cs_preserves_tl :
   tl eta S c = tl eta (cs S) c'.
 Proof.
   intros S eta. induction S using (well_founded_ind lt_Sty_mu_prefix_wf);
-    introv Hwf; destruct S; try solve [apply tl_eq; cs_simpl; reflexivity];
-    unfold Wf in *; norm_hyp_auto.
+    introv Hwf; destruct S; try solve [apply tl_eq; cs_simpl; reflexivity].
   - erewrite tl_mu_subst. erewrite H with (y := subst v (mu v S) S).
     apply tl_eq. cs_simpl. reflexivity.
-    all: auto 10 with contractive subst free.
+    all: auto 10 with subst wf.
 Unshelve.
   all: auto with contractive subst.
 Qed.
