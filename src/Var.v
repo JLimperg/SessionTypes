@@ -66,55 +66,9 @@ Hint Resolve beq_nat_sym : env.
 Lemma beq_var_sym : forall x y, beq_var x y = beq_var y x.
 Proof. intros. destruct x; destruct y; unfold beq_var. apply beq_nat_sym. Qed.
 
-Module VarOrder <: OrderedType.
-
-  Module N := PeanoNat.Nat.
-  Module NF := OrderedTypeFacts N.
-
+Module VarEq <: DecidableType.
   Definition t := Var.
   Definition eq (x y : Var) := eq x y.
-  Definition lt (x y : Var) :=
-    match x, y with
-    | mkVar n, mkVar m => lt n m
-    end
-  .
-  Definition compare (x y : Var) :=
-    match x, y with
-    | mkVar n, mkVar m => N.compare n m
-    end
-  .
-
-  Definition eq_equiv := eq_equivalence (A := Var).
+  Instance eq_equiv : Equivalence eq := @eq_equivalence Var.
   Definition eq_dec := eq_Var_dec.
-
-  Instance lt_irreflexive : Irreflexive lt.
-  Proof.
-    unfold Irreflexive. unfold Reflexive. unfold complement. intros x H.
-    destruct x. unfold lt in H. apply StrictOrder_Irreflexive in H. assumption.
-  Qed.
-
-  Instance lt_transitive : Transitive lt.
-  Proof.
-    unfold Transitive. intros x y z Hxy Hyz. destruct x; destruct y; destruct z.
-    unfold lt in *. eapply transitivity; eassumption.
-  Qed.
-
-  Instance lt_strorder : StrictOrder lt := {
-    StrictOrder_Irreflexive := lt_irreflexive ;
-    StrictOrder_Transitive := lt_transitive
-  }.
-
-  Instance lt_compat : Proper (eq ==> eq ==> iff) lt.
-  Proof. solve_proper. Qed.
-
-  Lemma compare_spec : forall x y : Var, CompareSpec (x = y) (lt x y) (lt y x) (compare x y).
-  Proof.
-    intros x y. destruct (compare x y) eqn:Hxy; destruct x; destruct y;
-      simpl in Hxy; constructor; first
-        [ apply NF.compare_eq_iff in Hxy
-        | apply NF.compare_lt_iff in Hxy
-        | apply NF.compare_gt_iff in Hxy
-        ]; auto.
-  Qed.
-
-End VarOrder.
+End VarEq.

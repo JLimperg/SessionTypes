@@ -2,10 +2,10 @@
    naming and such. *)
 
 Require Import Tac Var.
-Require Import MSetList MSetProperties Program.Basics.
+Require Import MSetWeakList MSetProperties Program.Basics.
 
-Module S := MSetList.Make VarOrder.
-Module SF := MSetProperties.WPropertiesOn VarOrder S.
+Module S := MSetWeakList.Make VarEq.
+Module SF := MSetProperties.WPropertiesOn VarEq S.
 
 Notation Env := S.t.
 
