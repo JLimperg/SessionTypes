@@ -1,5 +1,5 @@
 Require Import CS Contractive ContractiveFacts Equiv NonEquiv Shape ShapeFacts
-  Sty StyInd Subst SubstFacts Symmetry Tac TL TLFacts Wf.
+  Sty StyInd Subst SubstFacts Tac TL TLFacts Wf.
 
 
 Lemma cs_shape :
@@ -71,8 +71,8 @@ Lemma uncs_preserves_Sequiv_r :
   Sequiv S (cs S') ->
   Sequiv S S'.
 Proof.
-  introv Hcontr H. apply Sequiv_symmetric. apply Sequiv_symmetric in H.
-  apply uncs_preserves_Sequiv_l; assumption.
+  induction S' using (well_founded_ind lt_Sty_mu_prefix_wf);
+    intros; destruct S'; cs_simpl; eauto 10 with contractive subst.
 Qed.
 
 
