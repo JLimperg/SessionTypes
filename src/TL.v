@@ -49,12 +49,11 @@ Lemma Tl_bisim_coind : forall R,
 Proof. cofix CIH. introv H HR. apply H in HR. inverts HR; eauto with tl. Qed.
 
 
-Axiom tl_fix : (Tl -> Tl) -> Tl.
-
-Axiom tl_fix_fix :
-  forall F,
-  tl_fix F = F (tl_fix F).
-
+(*
+The following lemmae are used in the definition of tl below. We introduce
+them in order to prevent the unfolding of contractiveness proofs used in tl,
+which would otherwise lead to large and confusing goals.
+*)
 
 Ltac Contractive_inv :=
   let H := fresh in
@@ -90,7 +89,37 @@ Lemma Contractive_inv_mu {S X} :
 Proof. Contractive_inv. Qed.
 
 
-Fixpoint tl (eta : Var -> Tl) (S : Sty) (S_contractive : Contractive S) :=
+(*
+The following two axioms are used exclusively in the definition of tl below. We
+justify their use here:
+
+tl_fix is used to circumvent the productivity checker, which doesn't consider
+tl productive due to the case for (mu X S). This is correct insofar as tl is
+only productive if the input S is contractive, therefore we require a proof
+of contractiveness for every application of tl.
+
+With S contractive, productivity follows:
+
+  For S in {unit, send _ _, recv _ _, echoice _ _, ichoice _ _}, we produce a
+  constructor before recursing into tl.
+
+  For S = var _, we don't recurse at all.
+
+  For S = mu X S', S' <> var _ due to S contractive. Thus, the recursive call
+  (tl _ S' _) produces at least one constructor before potentially recursing
+  further.
+
+Thus, the use of tl_fix is safe. tl_fix_fix merely stipulates that tl_fix
+behaves like a fixpoint combinator.
+*)
+
+Axiom tl_fix : (Tl -> Tl) -> Tl.
+
+Axiom tl_fix_fix :
+  forall F,
+  tl_fix F = F (tl_fix F).
+
+Fixpoint tl (eta : Var -> Tl) (S : Sty) (Scontr : Contractive S) : Tl :=
   match S return Contractive S -> Tl with
   | unit => fun _ =>
       Tl_unit
@@ -111,5 +140,5 @@ Fixpoint tl (eta : Var -> Tl) (S : Sty) (S_contractive : Contractive S) :=
   | var X => fun _ =>
       eta X
   end
-  S_contractive
+  Scontr
 .
