@@ -2,6 +2,12 @@ Require Import Contractive CS CSFacts Equiv Free Sty Subst SubstFacts Msg Tac
   TL TLFacts Var Wf WfFacts.
 
 
+(* -------------------------------------------------------------------------- *)
+(* Bisim -> Equiv *)
+
+Section BisimEquiv.
+
+
 Inductive R_trace_bisim_equivalence' : Sty -> Sty -> Prop :=
 | R_trace_bisim_equivalence'_intro :
     forall S S' eta c c',
@@ -18,15 +24,15 @@ Lemma trace_bisim_equivalence' :
   Tl_bisim (tl eta S c) (tl eta S' c') ->
   Sequiv S S'.
 Proof.
-  Ltac solve_same_shape H :=
+  Local Ltac solve_same_shape H :=
     inverts2 H; constructor; econstructor; eauto with wf
   .
 
-  Ltac solve_mu H :=
+  Local Ltac solve_mu H :=
     erewrite tl_mu_subst in H; [constructor; econstructor|]; eauto with free wf
   .
 
-  Ltac solve_Wf_var :=
+  Local Ltac solve_Wf_var :=
     match goal with
     | _ : Wf (var _) |- _ => auto with wf
     end
@@ -65,6 +71,15 @@ Theorem trace_eq_equivalence :
 Proof. introv H. eapply trace_bisim_equivalence. rewrite H. reflexivity. Qed.
 
 
+End BisimEquiv.
+
+
+(* -------------------------------------------------------------------------- *)
+(* Equiv -> Bisim *)
+
+Section EquivBisim.
+
+
 Inductive R_equivalence_trace_bisim' : Tl -> Tl -> Prop :=
 | R_equivalence_trace_bisim'_intro :
     forall l l' eta,
@@ -78,8 +93,6 @@ Inductive R_equivalence_trace_bisim' : Tl -> Tl -> Prop :=
     R_equivalence_trace_bisim' l l'
 .
 
-
-(* TODO beautify *)
 Lemma equivalence_trace_bisim' :
   forall S S' eta c c',
   Wf S ->
@@ -87,15 +100,18 @@ Lemma equivalence_trace_bisim' :
   Sequiv S S' ->
   Tl_bisim (tl eta S c) (tl eta S' c').
 Proof.
-  Ltac wf_inv S1 H1 S2 :=
-    let Htmp := fresh in
-    assert (Wf S1) as Htmp by (rewrite H1; auto with wf);
-    assert (Wf S2) by (auto with wf);
-    clear Htmp
+  Local Ltac finish :=
+    intros; simpl; constructor; econstructor; eauto 15 with subst wf
   .
 
-  Ltac finish :=
-    simpl; constructor; econstructor; eauto 15 with subst wf
+  Local Hint Extern 3 (Wf ?Starget) =>
+    match goal with
+    | Heq : _ = cs ?Ssource, HWf : Wf ?Ssource |- _ =>
+        solve [
+          apply cs_preserves_Wf in HWf; rewrite <- Heq in HWf;
+          auto with wf
+        ]
+    end
   .
 
   intros. (rewrite_strat (subterms cs_preserves_tl)); try assumption.
@@ -107,26 +123,10 @@ Proof.
   inverts2 HSequiv.
   - gen c c' Hwf Hwf'. rewrite <- HSequiv. rewrite <- H2.
     constructor.
-  - gen c c' Hwf Hwf'. rewrite <- H0. rewrite <- H1. intros.
-    wf_inv (send B S0) H0 S0.
-    wf_inv (send B S'0) H1 S'0.
-    finish.
-  - gen c c' Hwf Hwf'. rewrite <- H0. rewrite <- H1. intros.
-    wf_inv (recv B S0) H0 S0.
-    wf_inv (recv B S'0) H1 S'0.
-    finish.
-  - gen c c' Hwf Hwf'. rewrite <- H0. rewrite <- H1. intros.
-    wf_inv (echoice S1 S2) H0 S1.
-    wf_inv (echoice S1 S2) H0 S2.
-    wf_inv (echoice S1' S2') H1 S1'.
-    wf_inv (echoice S1' S2') H1 S2'.
-    finish.
-  - gen c c' Hwf Hwf'. rewrite <- H0. rewrite <- H1. intros.
-    wf_inv (ichoice S1 S2) H0 S1.
-    wf_inv (ichoice S1 S2) H0 S2.
-    wf_inv (ichoice S1' S2') H1 S1'.
-    wf_inv (ichoice S1' S2') H1 S2'.
-    finish.
+  - gen c c' Hwf Hwf'. rewrite <- H0. rewrite <- H1. finish.
+  - gen c c' Hwf Hwf'. rewrite <- H0. rewrite <- H1. finish.
+  - gen c c' Hwf Hwf'. rewrite <- H0. rewrite <- H1. finish.
+  - gen c c' Hwf Hwf'. rewrite <- H0. rewrite <- H1. finish.
   - auto with subst wf.
   - auto with subst wf.
 Unshelve.
@@ -143,3 +143,5 @@ Theorem equivalence_trace_bisim :
   Tl_bisim (tl eta S (Wf_Contractive Swf))
     (tl eta S' (Wf_Contractive S'wf)).
 Proof. intros. apply equivalence_trace_bisim'; auto. Qed.
+
+End EquivBisim.
