@@ -50,9 +50,7 @@ Qed.
 (* ------------------------------------------------------------------------- *)
 (* Transitivity *)
 
-
-Create HintDb sequiv_trans discriminated.
-Hint Resolve Sequiv_reflexive : sequiv_trans.
+Section Transitivity.
 
 
 Inductive R_Sequiv_transitive : Sty -> Sty -> Prop :=
@@ -65,24 +63,9 @@ Inductive R_Sequiv_transitive : Sty -> Sty -> Prop :=
     Sequiv T U ->
     R_Sequiv_transitive S U
 .
-Hint Constructors R_Sequiv_transitive : sequiv_trans.
-
-Lemma R_Sequiv_transitive_reflexive :
-  forall S,
-  Wf S ->
-  R_Sequiv_transitive S S.
-Proof. eauto with sequiv_trans. Qed.
-
-Lemma Sequiv_R_Sequiv_transitive :
-  forall S T,
-  Wf S ->
-  Wf T ->
-  Sequiv S T ->
-  R_Sequiv_transitive S T.
-Proof. eauto with sequiv_trans. Qed.
+Hint Constructors R_Sequiv_transitive.
 
 
-(* TODO beautify (a lot) *)
 Theorem Sequiv_transitive :
   forall S T U,
   Wf S ->
@@ -93,103 +76,58 @@ Theorem Sequiv_transitive :
   Sequiv S U.
 Proof.
   intros. apply Sequiv_coind with (R := R_Sequiv_transitive);
-    [|eauto with sequiv_trans].
+    [|eauto].
   clear. introv H. rename S' into U. inverts H.
-  assert (Sequiv S (cs T)) as HSeqT  by (
-    eapply cs_preserves_Sequiv_r; eauto with wf
+
+  assert (Sequiv S (cs T)) as HSeqT by (
+    eapply cs_preserves_Sequiv_r; auto with wf
   ).
+
   assert (Sequiv (cs T) U) as HTeqU by (
-    eapply cs_preserves_Sequiv_l; eauto with wf
+    eapply cs_preserves_Sequiv_l; auto with wf
   ).
+
+  Hint Extern 3 (Wf _) =>
+    match goal with
+    | HWfT : Wf ?T, Heq : ?S = cs ?T |- _ =>
+        solve [
+          apply cs_preserves_Wf in HWfT; rewrite <- Heq in HWfT; auto with wf
+        ]
+    end
+  .
+
+  Local Ltac finish T1 :=
+    apply R_Sequiv_transitive_intro with (T := T1); auto with wf
+  .
+
   clear H3 H4. inverts2 HSeqT; inverts2 HTeqU; subst; try solve [false].
-
-  (* unit *)
   - auto.
-
-  - constructor. rewrite <- HSeqT in *.
-    apply Sequiv_R_Sequiv_transitive; auto with wf.
-
-  (* send *)
-  - rewrite <- H4 in H3. injection H3; intros; subst.
-    constructor. apply R_Sequiv_transitive_intro with (T := S); eauto with wf.
-      apply cs_preserves_Wf in H1. rewrite <- H4 in H1.
-      eauto with wf.
-
-  - constructor. rewrite <- H3 in *.
-    apply R_Sequiv_transitive_intro with (T := send B S'); eauto with wf.
-      rewrite H3. eauto with wf.
-
-  (* recv *)
-  - rewrite <- H4 in H3. injection H3; intros; subst.
-    constructor. apply R_Sequiv_transitive_intro with (T := S); eauto with wf.
-      apply cs_preserves_Wf in H1. rewrite <- H4 in H1.
-      eauto with wf.
-
-  - constructor. rewrite <- H3 in *.
-    apply R_Sequiv_transitive_intro with (T := recv B S'); eauto with wf.
-      rewrite H3. eauto with wf.
-
-  (* echoice *)
-  - assert (Wf (echoice S1' S2')) by (rewrite H3; eauto with wf).
-    rewrite <- H4 in H3. injection H3; intros; subst.
-    constructor.
-    * apply R_Sequiv_transitive_intro with (T := S0); eauto with wf.
-    * apply R_Sequiv_transitive_intro with (T := S3); eauto with wf.
-
-  - assert (Wf (echoice S1' S2')) by (rewrite H3; eauto with wf).
-    constructor. rewrite <- H3 in *.
-    apply R_Sequiv_transitive_intro with (T := echoice S1' S2'); eauto with wf.
-
-  (* ichoice *)
-  - assert (Wf (ichoice S1' S2')) by (rewrite H3; eauto with wf).
-    rewrite <- H4 in H3. injection H3; intros; subst.
-    constructor.
-    * apply R_Sequiv_transitive_intro with (T := S0); eauto with wf.
-    * apply R_Sequiv_transitive_intro with (T := S3); eauto with wf.
-
-  - assert (Wf (ichoice S1' S2')) by (rewrite H3; eauto with wf).
-    constructor. rewrite <- H3 in *.
-    apply R_Sequiv_transitive_intro with (T := ichoice S1' S2'); eauto with wf.
-
-  (* unit *)
-  - rewrite <- HTeqU in *. constructor. apply Sequiv_R_Sequiv_transitive;
-      auto with wf.
-
-  (* send *)
-  - constructor. rewrite <- H3 in *.
-    apply R_Sequiv_transitive_intro with (T := send B S); auto with wf.
-      rewrite H3; eauto with wf.
-
-  (* recv *)
-  - constructor. rewrite <- H3 in *.
-    apply R_Sequiv_transitive_intro with (T := recv B S); auto with wf.
-      rewrite H3; eauto with wf.
-
-  (* echoice *)
-  - constructor. rewrite <- H3 in *.
-    apply R_Sequiv_transitive_intro with (T := echoice S1 S2); auto with wf.
-      rewrite H3; eauto with wf.
-
-  (* ichoice *)
-  - constructor. rewrite <- H3 in *.
-    apply R_Sequiv_transitive_intro with (T := ichoice S1 S2); auto with wf.
-      rewrite H3; eauto with wf.
-
-  (* mu 1 (impossible) *)
-  - exfalso; eauto with subst wf.
-
-  (* mu 2 *)
-  - constructor.
-    assert (Sequiv (cs T) (mu X0 S')) as HTeqU' by auto.
-    apply R_Sequiv_transitive_intro with (T := cs T);
-      eauto with wf.
-
-  (* mu 3 (impossible) *)
-  - exfalso; eauto with subst wf.
-
-  (* mu 4 (impossible) *)
-  - exfalso; eauto with subst wf.
+  - constructor. rewrite <- HSeqT in *. eauto with wf.
+  - rewrite <- H4 in H3. injection H3; intros; subst. constructor. finish S.
+  - rewrite <- H3 in *. constructor. finish (send B S').
+  - rewrite <- H4 in H3. injection H3; intros; subst. constructor. finish S.
+  - rewrite <- H3 in *. constructor. finish (recv B S').
+  - rewrite <- H4 in H3. injection H3; intros; subst. constructor.
+    * finish S0.
+    * finish S3.
+  - rewrite <- H3 in *. constructor. finish (echoice S1' S2').
+  - rewrite <- H4 in H3. injection H3; intros; subst. constructor.
+    * finish S0.
+    * finish S3.
+  - rewrite <- H3 in *. constructor. finish (ichoice S1' S2').
+  - rewrite <- HTeqU in *. constructor. eauto with wf.
+  - rewrite <- H3 in *. constructor. finish (send B S).
+  - rewrite <- H3 in *. constructor. finish (recv B S).
+  - rewrite <- H3 in *. constructor. finish (echoice S1 S2).
+  - rewrite <- H3 in *. constructor. finish (ichoice S1 S2).
+  - exfalso; auto with subst wf.
+  - assert (Sequiv (cs T) (mu X0 S')) as HTeqU' by auto.
+    constructor. finish (cs T).
+  - exfalso; auto with subst wf.
+  - exfalso; auto with subst wf.
 Qed.
+
+End Transitivity.
 
 
 (* ------------------------------------------------------------------------- *)
