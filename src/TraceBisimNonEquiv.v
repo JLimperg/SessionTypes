@@ -1,12 +1,5 @@
-Require Import Msg Equiv EquivFacts NonEquiv Sty Tac TL TLFacts Var Wf WfFacts.
-Require Import Classical.
-
-
-Lemma contrapositive :
-  forall P Q,
-  (~ Q -> ~ P) ->
-  P -> Q.
-Proof. introv H HP. pose proof (classic Q) as HQ. inverts1 HQ; tauto. Qed.
+Require Import Classical Equiv EquivFacts Msg NonEquiv Sty Tac TL TLFacts Var
+  Wf WfFacts.
 
 
 Lemma NSequiv_not_Tl_bisim :
