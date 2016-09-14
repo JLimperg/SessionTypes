@@ -1,5 +1,5 @@
-Require Import Contractive CS CSFacts Equiv Free Sty Subst SubstFacts Msg Tac
-  TL TLFacts Var Wf WfFacts.
+Require Import Contractive CS CSFacts Ensembles Equiv Free Sty Subst
+  SubstFacts Msg Tac TL TLFacts TLSets Var Wf WfFacts.
 
 
 (* -------------------------------------------------------------------------- *)
@@ -69,6 +69,16 @@ Theorem trace_eq_equivalence :
     (tl eta S' (Wf_Contractive Swf')) ->
   Sequiv S S'.
 Proof. introv H. eapply trace_bisim_equivalence. rewrite H. reflexivity. Qed.
+
+Theorem trace_bisim_tlset_eq :
+  forall S S' eta
+  (Swf : Wf S)
+  (Swf' : Wf S'),
+  Same_set
+    (tlset (tl eta S (Wf_Contractive Swf)))
+    (tlset (tl eta S' (Wf_Contractive Swf'))) ->
+  Sequiv S S'.
+Proof. introv H. eauto using tlset_eq__Tl_bisim, trace_bisim_equivalence. Qed.
 
 
 End BisimEquiv.
@@ -143,5 +153,15 @@ Theorem equivalence_trace_bisim :
   Tl_bisim (tl eta S (Wf_Contractive Swf))
     (tl eta S' (Wf_Contractive S'wf)).
 Proof. intros. apply equivalence_trace_bisim'; auto. Qed.
+
+Theorem tlset_eq_trace_bisim :
+  forall S S' eta
+  (Swf : Wf S)
+  (S'wf : Wf S'),
+  Sequiv S S' ->
+  Same_set
+    (tlset (tl eta S (Wf_Contractive Swf)))
+    (tlset (tl eta S' (Wf_Contractive S'wf))).
+Proof. intros. eauto using equivalence_trace_bisim, Tl_bisim__tlset_eq. Qed.
 
 End EquivBisim.
