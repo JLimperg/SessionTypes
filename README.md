@@ -1,5 +1,7 @@
 # Building
 
+Building requires that `coqc` version 8.5 is on the path.
+
 ```
 git submodule init
 git submodule update
