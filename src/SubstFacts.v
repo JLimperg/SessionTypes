@@ -1,5 +1,6 @@
 Require Import Contractive ContractiveFacts Env Free FreeFacts Sty StyInd Shape
   ShapeFacts Subst Tac Var Wf.
+Require Import Coq.Bool.DecBool.
 
 
 Lemma subst_preserves_shape :
@@ -8,7 +9,7 @@ Lemma subst_preserves_shape :
   shape (subst X r S) = shape S.
 Proof.
   induction S; introv Hvarsh; simpl in *; auto;
-    destruct (beq_var X v); auto.
+    destruct (eq_Var_dec X v); auto.
     exfalso; auto.
 Qed.
 
@@ -20,11 +21,13 @@ Lemma subst_preserves_Contractive :
   shape R <> varS ->
   Contractive (subst X R S).
 Proof.
-  introv HcontrS HcontrT HshapeT. induction HcontrS; simpl; auto with contractive.
-  - destruct (beq_var X X0); [auto with contractive|]. constructor; [auto|].
-    * destruct S; simpl; auto with contractive.
-      + destruct (beq_var X v); auto.
-  - destruct (beq_var X X0); auto with contractive.
+  introv HcontrS HcontrT HshapeT. induction HcontrS; simpl;
+    auto with contractive.
+  - destruct (eq_Var_dec X X0).
+    * simpl. auto with contractive.
+    * constructor; auto with contractive.
+      + rewrite subst_preserves_shape; assumption.
+  - destruct (eq_Var_dec X X0); simpl; auto with contractive.
 Qed.
 Hint Resolve subst_preserves_Contractive : subst.
 
@@ -46,12 +49,10 @@ Lemma subst_neutral :
   subst X R S = S.
 Proof.
   induction S; introv Hfree; simpl; auto; try solve
-    [ rewrite IHS; auto with free
-    | rewrite IHS1; auto with free; rewrite IHS2; auto with free
-    ];
-    destruct (beq_var X v) eqn:HXeqv; auto.
-      rewrite <- beq_var_false_iff in HXeqv. rewrite IHS; auto with free.
-      rewrite <- beq_var_true_iff in HXeqv. subst. exfalso; auto with free.
+    [first [rewrite IHS | rewrite IHS1, IHS2]; auto with free];
+    destruct (eq_Var_dec X v); try reflexivity.
+  - rewrite IHS; auto with free.
+  - subst. exfalso; auto with free.
 Qed.
 
 
@@ -61,10 +62,10 @@ Lemma subst_preserves_Free :
   Free X S ->
   Free X (subst Y R S).
 Proof.
-  induction S; introv Hneq Hfree; simpl; auto with free; try solve
-    [inverts1 Hfree; decompose_or Hfree; auto with free].
-  - destruct (beq_var Y v) eqn:HYeqv; auto with free.
-  - inverts Hfree. rewrite beq_var_neq; auto with free.
+  induction S; introv Hneq Hfree; simpl; try solve
+    [inverts1 Hfree; try decompose_or Hfree; auto with free].
+  - destruct (eq_Var_dec Y v); simpl; auto with free.
+  - inverts Hfree. rewrite ifdec_right; auto with free.
 Qed.
 
 
@@ -74,41 +75,38 @@ Lemma subst_Nonfree :
   ~ Free X (subst X R S).
 Proof.
   introv HR. destruct (Free_dec S X) as [HS | HS].
-    gen S. induction S; introv HS; auto with free.
-
-      introv H. simpl in H. inverts1 H. destruct H;
+  - gen S. induction S; introv HS; auto with free.
+    * introv H. simpl in H. inverts1 H. destruct H;
         [destruct (Free_dec S1 X) | destruct (Free_dec S2 X)]; unfold not in *;
           auto; rewrite subst_neutral in H; auto.
-
-      introv H. simpl in H. inverts1 H. destruct H;
+    * introv H. simpl in H. inverts1 H. destruct H;
         [destruct (Free_dec S1 X) | destruct (Free_dec S2 X)]; unfold not in *;
           auto; rewrite subst_neutral in H; auto.
-
-      inverts HS. simpl. rewrite beq_var_neq; auto with free.
-
-      inverts HS. simpl. rewrite <- beq_var_refl; auto.
-
-  introv H. rewrite subst_neutral in H; auto with free.
+    * inverts HS. simpl. rewrite ifdec_right; auto with free.
+    * inverts HS. simpl. rewrite ifdec_left; auto.
+  - introv H. rewrite subst_neutral in H; auto with free.
 Qed.
 
 
-(* TODO beautify *)
 Lemma Free_subst_inversion :
   forall S X Y R,
   Free X (subst Y R S) ->
   Free X R \/ (X <> Y /\ Free X S).
 Proof.
   induction S; introv H; simpl in *.
-    auto with free.
-    inverts1 H. apply IHS in H; destruct H; intuition (auto with free).
-    inverts1 H. apply IHS in H; destruct H; intuition (auto with free).
-    inverts1 H. destruct H; [apply IHS1 in H | apply IHS2 in H]; destruct H; intuition (auto with free).
-    inverts1 H. destruct H; [apply IHS1 in H | apply IHS2 in H]; destruct H; intuition (auto with free).
-    destruct (beq_var Y v) eqn:HYeqv.
-      apply beq_var_true_iff in HYeqv. subst. inversion H. iauto.
-      inverts1 H. apply IHS in H. destruct H; intuition (auto with free).
-    destruct (beq_var Y v) eqn:HYeqv; [auto|].
-      inverts1 H. apply beq_var_false_iff in HYeqv. auto with free.
+  - auto with free.
+  - inverts1 H. apply IHS in H; destruct H; auto with free.
+  - inverts1 H. apply IHS in H; destruct H; auto with free.
+  - inverts1 H. destruct H; [apply IHS1 in H | apply IHS2 in H]; destruct H;
+      intuition (auto with free).
+  - inverts1 H. destruct H; [apply IHS1 in H | apply IHS2 in H]; destruct H;
+      intuition (auto with free).
+  - destruct (eq_Var_dec Y v).
+    * subst. inverts H. auto with free.
+    * inverts1 H. apply IHS in H. destruct H; auto with free.
+  - destruct (eq_Var_dec Y v).
+    * auto.
+    * inverts1 H. auto with free.
 Qed.
 
 
@@ -165,9 +163,10 @@ Lemma lt_Sty_mu_prefix_subst :
   lt_Sty_mu_prefix (subst X R S) (mu X S).
 Proof.
   intros S X R; induction S; introv Hcontr Hsh; try solve [constructor].
-  - simpl. destruct (beq_var X v); [constructor|].
-    inverts Hcontr. unfold lt_Sty_mu_prefix in *. unfold Wf_nat.ltof in *.
-    simpl in *. apply Lt.lt_n_S. eauto.
+  - simpl. destruct (eq_Var_dec X v).
+    * constructor.
+    * simpl. inverts Hcontr. unfold lt_Sty_mu_prefix, Wf_nat.ltof in *.
+      apply Lt.lt_n_S. eauto.
   - exfalso; auto.
 Qed.
 

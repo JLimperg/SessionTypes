@@ -50,24 +50,51 @@ with Checked_ind_mut := Induction for Checked Sort Prop.
 Definition Wf' S := Ok env_empty S.
 
 
+Lemma Ok_inv :
+  forall S S' XS,
+  StySubSimple S S' ->
+  Ok XS S' ->
+  Checked XS S.
+Proof. introv Hsub Hok. inverts Hok; inverts Hsub; auto. Qed.
+
+
+Hint Extern 2 (Checked _ ?S) =>
+  match goal with
+  | H : Ok _ _ |- _ =>
+      solve [eapply (Ok_inv S) in H; [eassumption | constructor]]
+  end
+: wf'.
+
+
+Lemma Checked_inv :
+  forall S S' XS,
+  StySubSimple S S' ->
+  Checked XS S' ->
+  Checked XS S.
+Proof. introv Hsub Hch. inverts Hsub; inverts2 Hch; assumption. Qed.
+
+
+Hint Extern 2 (Checked _ ?S) =>
+  match goal with
+  | H : Checked _ _ |- _ =>
+      solve [eapply (Checked_inv S) in H; [eassumption | constructor]]
+  end
+: wf'.
+
+
 Lemma Ok_Checked_Contractive :
   forall S,
   (forall XS, Ok XS S -> Contractive S) /\
   (forall XS, Checked XS S -> Contractive S).
 Proof.
   induction S; split; introv H; try (decompose_and IHS); constructor;
-    inverts H;
-    try match goal with
-    | H : Ok _ _ |- _ => inverts H
-    end;
-    try match goal with
-    | |- shape _ <> varS => simpl; autodiscriminate
-    | |- Contractive _ => eauto 3 with wf'
-    end.
-  - inverts H4; simpl; autodiscriminate.
-Unshelve.
-  all: assumption.
+    eauto with wf'; inverts1 H.
+  - eauto.
+  - inverts H; autodiscriminate.
+  - inverts H; eauto.
+  - inverts2 H; autodiscriminate.
 Qed.
+
 
 Lemma Ok_Contractive :
   forall S XS,
@@ -94,31 +121,17 @@ Lemma Ok_Checked_Free :
   ~ env_mem X XS ->
   ~ Free X S.
 Proof.
-  induction S; introv HOk Henv; decompose_or_auto;
-    auto with free;
-    match goal with
-    | |- ~ Free _ unit => auto with free
-    | |- ~ Free _ (var _) => idtac
-    | H : Ok _ _      |- _ => inverts1 H
-    | H : Checked _ _ |- _ => inverts2 H
-    end;
-    let solve_choice :=
-      intro H; inverts1 H; destruct H; gen H;
-      first [eapply IHS1 | eapply IHS2]; eauto with free
-    in
-    try match goal with
-    | |- ~ Free _ (mu _ _) =>
-        introv H; inverts H; eapply IHS; eauto with free;
-        introv H; apply env_mem_add in H; auto
-    | |- ~ Free _ (var _) => idtac
-    | |- ~ Free _ (echoice _ _) => solve_choice
-    | |- ~ Free _ (ichoice _ _) => solve_choice
-    | |- _ => intro H; eapply IHS; eauto with free
-    end.
+  induction S; introv HOk Henv; decompose_or_auto; eauto 6 with wf' free.
+  - introv H; inverts1 H. eapply IHS with (XS := env_add v XS);
+    eauto using env_mem_add with wf' free.
+    * inverts1 HOk. eauto.
+  - introv H; inverts1 H. eapply IHS with (XS := env_add v XS);
+    eauto using env_mem_add with wf' free.
+    * inverts2 HOk. eauto.
+  - inversion HOk.
   - inverts1 HOk.
-  - inverts1 HOk.
-    * introv H. inverts1 H. auto.
-    * inverts HOk.
+    * introv H. inverts H. auto.
+    * inversion HOk.
 Qed.
 
 
@@ -141,7 +154,8 @@ Proof. intros. eapply Ok_Checked_Free; eauto. Qed.
 Lemma Wf'_closed : forall S, Wf' S -> Closed S.
 Proof.
   unfold Wf'. unfold Closed. intros S Hwf X. eapply Ok_Free;
-    eauto with env.
+    eauto.
+  - apply env_mem_empty.
 Qed.
 
 
@@ -199,7 +213,5 @@ Lemma Wf'_iff_Wf :
   forall S,
   Wf S <-> Wf' S.
 Proof.
-  intros. split.
-  - apply Wf_Wf'.
-  - apply Wf'_Wf.
+  intros. split; [apply Wf_Wf' | apply Wf'_Wf].
 Qed.

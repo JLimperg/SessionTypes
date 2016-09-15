@@ -124,15 +124,14 @@ Proof.
   - erewrite IHS; trivial.
   - erewrite IHS1; trivial; erewrite IHS2; trivial.
   - erewrite IHS1; trivial; erewrite IHS2; trivial.
-  - simpl in *; destruct (beq_var X v) eqn:Heq; simpl; fequal; extensionality x.
-    * apply beq_var_true in Heq. subst. rewrite eta_override_overwrite;
-        auto using tl_contractive_irrelevant.
-    * apply beq_var_false in Heq. rewrite eta_override_exchange; [|auto].
+  - simpl in *; destruct (eq_Var_dec X v); simpl; fequal; extensionality x.
+    * subst. rewrite eta_override_overwrite;
+      auto using tl_contractive_irrelevant.
+    * rewrite eta_override_exchange; [|auto].
       erewrite eta_irrelevance with (S := T); trivial. eapply IHS; trivial.
-  - simpl in *. destruct (beq_var X v) eqn:Heq.
-    * apply beq_var_true in Heq. subst. rewrite override_same.
-      apply tl_contractive_irrelevant.
-    * simpl. auto using override_different, beq_var_false.
+  - simpl in *. destruct (eq_Var_dec X v).
+    * subst. rewrite override_same. apply tl_contractive_irrelevant.
+    * simpl. auto using override_different.
 Qed.
 
 
